@@ -13,7 +13,7 @@ Nerd Quiz is a local full-stack quiz app with a NestJS backend, a React/Vite fro
 - Node.js 22
 - npm
 
-If you use `nvm`, the existing `start.sh` script already tries to switch to Node 22 automatically.
+If you use `nvm`, both `setup.sh` and `start.sh` try to switch to Node 22 automatically before running project commands.
 
 ## First-time setup
 

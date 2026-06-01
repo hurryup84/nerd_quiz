@@ -8,6 +8,8 @@ FRONTEND_DIR="$ROOT_DIR/frontend"
 BACKEND_ENV_FILE="$BACKEND_DIR/.env"
 DEFAULT_DATABASE_URL="file:./dev.db"
 DEFAULT_JWT_SECRET="change-me-in-production"
+REQUIRED_NODE_MAJOR=22
+MINIMUM_NPM_MAJOR=10
 
 require_command() {
   local command_name="$1"
@@ -21,6 +23,36 @@ require_command() {
 print_step() {
   echo
   echo "==> $1"
+}
+
+try_use_nvm() {
+  export NVM_DIR="$HOME/.nvm"
+
+  if [ -s "$NVM_DIR/nvm.sh" ]; then
+    # shellcheck disable=SC1090
+    . "$NVM_DIR/nvm.sh"
+    nvm use "$REQUIRED_NODE_MAJOR" >/dev/null 2>&1 || true
+  fi
+}
+
+verify_runtime_versions() {
+  local node_major
+  local npm_major
+
+  node_major="$(node -p "process.versions.node.split('.')[0]")"
+  npm_major="$(npm --version | cut -d. -f1)"
+
+  if [ "$node_major" -lt "$REQUIRED_NODE_MAJOR" ]; then
+    echo "Node.js $REQUIRED_NODE_MAJOR or newer is required. Current version: $(node --version)"
+    echo "Install Node.js $REQUIRED_NODE_MAJOR and rerun ./setup.sh."
+    exit 1
+  fi
+
+  if [ "$npm_major" -lt "$MINIMUM_NPM_MAJOR" ]; then
+    echo "npm $MINIMUM_NPM_MAJOR or newer is required. Current version: $(npm --version)"
+    echo "Switch to a newer Node.js installation, for example with: nvm use $REQUIRED_NODE_MAJOR"
+    exit 1
+  fi
 }
 
 ensure_backend_env() {
@@ -48,9 +80,12 @@ install_dependencies() {
 setup_backend() {
   print_step "Preparing backend"
   ensure_backend_env
-  npm --prefix "$BACKEND_DIR" exec prisma generate
-  npm --prefix "$BACKEND_DIR" exec prisma migrate deploy
-  npm --prefix "$BACKEND_DIR" run seed
+  (
+    cd "$BACKEND_DIR"
+    npm exec prisma generate
+    npm exec prisma migrate deploy
+    npm run seed
+  )
 }
 
 print_summary() {
@@ -70,10 +105,12 @@ EOF
 main() {
   require_command node
   require_command npm
+  try_use_nvm
 
   print_step "Checking Node.js version"
   node --version
   npm --version
+  verify_runtime_versions
 
   install_dependencies "$BACKEND_DIR" "backend"
   install_dependencies "$FRONTEND_DIR" "frontend"
