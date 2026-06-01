@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           Int                 @id @default(autoincrement())
+  username     String              @unique
+  passwordHash String
+  role         String              @default("USER")
+  createdAt    DateTime            @default(now())
+  quizRounds   QuizRound[]
+  answers      Answer[]
+  finalizations RoundFinalization[]
+
+  @@index([username])
+}
+
+model Question {
+  id            Int             @id @default(autoincrement())
+  questionId    String          @unique
+  questionText  String
+  answerA       String
+  answerB       String
+  answerC       String
+  answerD       String
+  correctAnswer String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  roundQuestions RoundQuestion[]
+
+  @@index([questionId])
+}
+
+model QuizRound {
+  id                   Int                 @id @default(autoincrement())
+  requiredParticipants Int
+  status               String              @default("ACTIVE")
+  createdBy            User                @relation(fields: [createdById], references: [id])
+  createdById          Int
+  createdAt            DateTime            @default(now())
+  finishedAt           DateTime?
+  timeoutAt            DateTime?
+  questions            RoundQuestion[]
+  answers              Answer[]
+  finalizations        RoundFinalization[]
+
+  @@index([status])
+}
+
+model RoundQuestion {
+  id          Int       @id @default(autoincrement())
+  quizRound   QuizRound @relation(fields: [quizRoundId], references: [id])
+  quizRoundId Int
+  question    Question  @relation(fields: [questionId], references: [id])
+  questionId  Int
+  order       Int       
+  
+  answers     Answer[]
+  
+  @@unique([quizRoundId, questionId])
+  @@index([quizRoundId])
+}
+
+model Settings {
+  key   String @id
+  value String
+}
+
+model Answer {
+  id              Int           @id @default(autoincrement())
+  quizRound       QuizRound     @relation(fields: [quizRoundId], references: [id])
+  quizRoundId     Int
+  roundQuestion   RoundQuestion @relation(fields: [roundQuestionId], references: [id])
+  roundQuestionId Int
+  user            User          @relation(fields: [userId], references: [id])
+  userId          Int
+  selectedAnswer  String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([userId, roundQuestionId])
+  @@index([quizRoundId])
+  @@index([userId])
+}
+
+model RoundFinalization {
+  id          Int       @id @default(autoincrement())
+  quizRound   QuizRound @relation(fields: [quizRoundId], references: [id])
+  quizRoundId Int
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  createdAt   DateTime  @default(now())
+
+  @@unique([quizRoundId, userId])
+}

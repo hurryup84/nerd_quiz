@@ -1,0 +1,8 @@
+.backend.pid
+backend.log
+backend.log
+.frontend.pid
+frontend.log
+.DS_Store
+backend/dev.db
+coverage/

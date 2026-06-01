@@ -1,0 +1,81 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
+} from '@nestjs/common';
+import type { Response } from 'express';
+import { readFileSync } from 'node:fs';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { QuestionsService } from './questions.service';
+import { CreateQuestionDto } from './dto/create-question.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminGuard } from '../admin/admin.guard';
+
+@Controller('questions')
+@UseGuards(JwtAuthGuard)
+export class QuestionsController {
+  constructor(private questionsService: QuestionsService) {}
+
+  @Get()
+  findAll() {
+    return this.questionsService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.questionsService.findOne(id);
+  }
+
+  @Post()
+  create(@Body() dto: CreateQuestionDto) {
+    return this.questionsService.create(dto);
+  }
+
+  @UseGuards(AdminGuard)
+  @Put(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateQuestionDto,
+  ) {
+    return this.questionsService.update(id, dto);
+  }
+
+  @UseGuards(AdminGuard)
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.questionsService.remove(id);
+  }
+
+  @UseGuards(AdminGuard)
+  @Get('export/csv')
+  async exportCsv(@Res() res: Response) {
+    const csv = await this.questionsService.exportCsv();
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="questions.csv"');
+    res.send(csv);
+  }
+
+  @UseGuards(AdminGuard)
+  @Post('import/csv')
+  @UseInterceptors(FileInterceptor('file'))
+  async importCsv(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    const csv = file.buffer
+      ? file.buffer.toString('utf-8')
+      : file.path
+        ? readFileSync(file.path, 'utf-8')
+        : '';
+    const count = await this.questionsService.importCsv(csv);
+    return { imported: count };
+  }
+}
