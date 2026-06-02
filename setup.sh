@@ -83,7 +83,8 @@ setup_backend() {
   (
     cd "$BACKEND_DIR"
     npm exec prisma generate
-    npm exec prisma migrate deploy
+    # Local setup should match the current Prisma schema even when no migration file exists.
+    npm exec prisma db push
     npm run seed
   )
 }
