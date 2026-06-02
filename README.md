@@ -138,7 +138,7 @@ Use a hosted SQLite-compatible URL instead (for example Turso/libSQL):
 - Build command:
 
 ```bash
-npm ci && npm run build && npm exec prisma migrate deploy && npm run seed
+npm install --include=dev && npm run build && npm run seed
 ```
 
 - Start command:
@@ -152,7 +152,8 @@ npm run start:prod
 ```env
 NODE_ENV=production
 JWT_SECRET=<long-random-secret>
-DATABASE_URL=<your-libsql-or-sqlite-compatible-url>
+DATABASE_URL=file:./dev.db
+TURSO_DATABASE_URL=<your-libsql-url>
 TURSO_AUTH_TOKEN=<token-if-required>
 FRONTEND_URL=https://<your-frontend>.onrender.com
 COOKIE_SECURE=true
@@ -163,6 +164,7 @@ Notes:
 
 - Render injects `PORT` automatically; backend now listens on it.
 - `npm run seed` is safe to rerun. It skips the admin user if already present.
+- For Turso/libSQL, Prisma schema migrations are not applied with `prisma migrate deploy` using `libsql://` in this setup. Apply schema changes separately via Turso tooling (`prisma migrate diff` + Turso CLI), then redeploy.
 
 ### 3) Create the frontend static site on Render
 
