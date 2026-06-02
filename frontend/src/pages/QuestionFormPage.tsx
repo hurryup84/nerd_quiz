@@ -5,6 +5,9 @@ import { api } from '../api/client';
 
 interface QuestionForm {
   questionText: string;
+  categoryId: string;
+  difficultyId: string;
+  info: string;
   answerA: string;
   answerB: string;
   answerC: string;
@@ -12,13 +15,23 @@ interface QuestionForm {
   correctAnswer: string;
 }
 
-interface Question extends QuestionForm {
+interface Question extends Omit<QuestionForm, 'categoryId' | 'difficultyId'> {
   id: number;
   questionId: string;
+  category?: { id: number; name: string } | null;
+  difficulty?: { id: number; name: string } | null;
+}
+
+interface QuestionsMeta {
+  categories: { id: number; name: string }[];
+  difficulties: { id: number; name: string }[];
 }
 
 const empty: QuestionForm = {
   questionText: '',
+  categoryId: '',
+  difficultyId: '',
+  info: '',
   answerA: '',
   answerB: '',
   answerC: '',
@@ -40,10 +53,18 @@ export function QuestionFormPage() {
     enabled: isEdit,
   });
 
+  const { data: meta } = useQuery<QuestionsMeta>({
+    queryKey: ['questions', 'meta'],
+    queryFn: () => api.get<QuestionsMeta>('/questions/meta'),
+  });
+
   useEffect(() => {
     if (existing) {
       setForm({
         questionText: existing.questionText,
+        categoryId: existing.category ? String(existing.category.id) : '',
+        difficultyId: existing.difficulty ? String(existing.difficulty.id) : '',
+        info: existing.info ?? '',
         answerA: existing.answerA,
         answerB: existing.answerB,
         answerC: existing.answerC,
@@ -54,10 +75,19 @@ export function QuestionFormPage() {
   }, [existing]);
 
   const mutation = useMutation({
-    mutationFn: (data: QuestionForm) =>
-      isEdit
-        ? api.put<Question>(`/questions/${id}`, data)
-        : api.post<Question>('/questions', data),
+    mutationFn: (data: QuestionForm) => {
+      const payload = {
+        ...data,
+        categoryId: data.categoryId === '' ? undefined : Number(data.categoryId),
+        difficultyId:
+          data.difficultyId === '' ? undefined : Number(data.difficultyId),
+        info: data.info.trim() || undefined,
+      };
+
+      return isEdit
+        ? api.put<Question>(`/questions/${id}`, payload)
+        : api.post<Question>('/questions', payload);
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['questions'] });
       navigate('/admin/questions');
@@ -87,6 +117,36 @@ export function QuestionFormPage() {
               value={form.questionText}
               onChange={set('questionText')}
               required
+              rows={3}
+            />
+          </div>
+          <div className="form-group">
+            <label>Category (optional)</label>
+            <select value={form.categoryId} onChange={set('categoryId')}>
+              <option value="">(none)</option>
+              {(meta?.categories ?? []).map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Difficulty (optional)</label>
+            <select value={form.difficultyId} onChange={set('difficultyId')}>
+              <option value="">(none)</option>
+              {(meta?.difficulties ?? []).map((difficulty) => (
+                <option key={difficulty.id} value={difficulty.id}>
+                  {difficulty.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Info (optional, shown in round results)</label>
+            <textarea
+              value={form.info}
+              onChange={set('info')}
               rows={3}
             />
           </div>

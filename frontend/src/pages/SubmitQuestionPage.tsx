@@ -1,10 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 
 interface QuestionForm {
   questionText: string;
+  categoryId: string;
+  difficultyId: string;
+  info: string;
   answerA: string;
   answerB: string;
   answerC: string;
@@ -12,8 +15,16 @@ interface QuestionForm {
   correctAnswer: string;
 }
 
+interface QuestionsMeta {
+  categories: { id: number; name: string }[];
+  difficulties: { id: number; name: string }[];
+}
+
 const empty: QuestionForm = {
   questionText: '',
+  categoryId: '',
+  difficultyId: '',
+  info: '',
   answerA: '',
   answerB: '',
   answerC: '',
@@ -27,8 +38,20 @@ export function SubmitQuestionPage() {
   const [form, setForm] = useState<QuestionForm>(empty);
   const [error, setError] = useState('');
 
+  const { data: meta } = useQuery<QuestionsMeta>({
+    queryKey: ['questions', 'meta'],
+    queryFn: () => api.get<QuestionsMeta>('/questions/meta'),
+  });
+
   const mutation = useMutation({
-    mutationFn: (data: QuestionForm) => api.post('/questions', data),
+    mutationFn: (data: QuestionForm) =>
+      api.post('/questions', {
+        ...data,
+        categoryId: data.categoryId === '' ? undefined : Number(data.categoryId),
+        difficultyId:
+          data.difficultyId === '' ? undefined : Number(data.difficultyId),
+        info: data.info.trim() || undefined,
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['questions'] });
       navigate('/');
@@ -60,6 +83,37 @@ export function SubmitQuestionPage() {
               onChange={set('questionText')}
               required
               placeholder="Enter your question…"
+            />
+          </div>
+          <div className="form-group">
+            <label>Category (optional)</label>
+            <select value={form.categoryId} onChange={set('categoryId')}>
+              <option value="">(none)</option>
+              {(meta?.categories ?? []).map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Difficulty (optional)</label>
+            <select value={form.difficultyId} onChange={set('difficultyId')}>
+              <option value="">(none)</option>
+              {(meta?.difficulties ?? []).map((difficulty) => (
+                <option key={difficulty.id} value={difficulty.id}>
+                  {difficulty.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Info (optional, shown in round results)</label>
+            <textarea
+              rows={3}
+              value={form.info}
+              onChange={set('info')}
+              placeholder="Extra explanation shown only in final round results"
             />
           </div>
           {(['A', 'B', 'C', 'D'] as const).map((letter) => {

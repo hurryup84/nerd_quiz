@@ -1,7 +1,22 @@
-import { IsString, IsIn } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsString, IsIn, IsInt, IsOptional } from 'class-validator';
 
 export class CreateQuestionDto {
   @IsString() questionText!: string;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  categoryId?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  difficultyId?: number;
+
+  @IsOptional()
+  @IsString()
+  info?: string;
+
   @IsString() answerA!: string;
   @IsString() answerB!: string;
   @IsString() answerC!: string;

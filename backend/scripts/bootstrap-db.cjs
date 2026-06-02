@@ -1,11 +1,11 @@
 const { execSync } = require('node:child_process');
-const fs = require('node:fs');
-const path = require('node:path');
 const { createClient } = require('@libsql/client');
 
 const REQUIRED_TABLES = [
   'User',
   'Question',
+  'Category',
+  'Difficulty',
   'QuizRound',
   'RoundQuestion',
   'Settings',
@@ -13,26 +13,21 @@ const REQUIRED_TABLES = [
   'RoundFinalization',
 ];
 
-const INITIAL_TABLES = ['User', 'Question', 'QuizRound', 'Answer'];
-const ALIGN_TABLES = ['Settings', 'RoundQuestion', 'RoundFinalization'];
-
-const INIT_MIGRATION_FILE = path.join(
-  __dirname,
-  '..',
-  'prisma',
-  'migrations',
-  '20260601183749_init',
-  'migration.sql',
-);
-
-const ALIGN_MIGRATION_FILE = path.join(
-  __dirname,
-  '..',
-  'prisma',
-  'migrations',
-  '20260602002000_align_schema_with_current_models',
-  'migration.sql',
-);
+const REQUIRED_QUESTION_COLUMNS = [
+  'id',
+  'questionId',
+  'questionText',
+  'categoryId',
+  'difficultyId',
+  'info',
+  'answerA',
+  'answerB',
+  'answerC',
+  'answerD',
+  'correctAnswer',
+  'createdAt',
+  'updatedAt',
+];
 
 function createDbClient(url, authToken) {
   return createClient({
@@ -51,46 +46,49 @@ async function hasRequiredSchema(url, authToken) {
   });
 
   const existing = new Set(result.rows.map((row) => String(row.name)));
-  return REQUIRED_TABLES.every((table) => existing.has(table));
+  const hasTables = REQUIRED_TABLES.every((table) => existing.has(table));
+  if (!hasTables) return false;
+
+  const questionColumns = await client.execute('PRAGMA table_info("Question")');
+  const existingColumns = new Set(
+    questionColumns.rows.map((row) => String(row.name)),
+  );
+
+  return REQUIRED_QUESTION_COLUMNS.every((column) =>
+    existingColumns.has(column),
+  );
 }
 
-async function getExistingTables(client, tableNames) {
-  const placeholders = tableNames.map(() => '?').join(', ');
-  const result = await client.execute({
-    sql: `SELECT name FROM sqlite_master WHERE type='table' AND name IN (${placeholders})`,
-    args: tableNames,
+function runCapture(command, env = process.env) {
+  return execSync(command, {
+    stdio: ['ignore', 'pipe', 'inherit'],
+    env,
+    encoding: 'utf8',
   });
-  return new Set(result.rows.map((row) => String(row.name)));
-}
-
-function hasAllTables(existingTables, requiredTables) {
-  return requiredTables.every((table) => existingTables.has(table));
-}
-
-async function applyMigrationSql(client, filePath) {
-  const sql = fs.readFileSync(filePath, 'utf8');
-  await client.executeMultiple(sql);
 }
 
 async function bootstrapLibsqlSchema(url, authToken) {
   const client = createDbClient(url, authToken);
-  let existingTables = await getExistingTables(client, REQUIRED_TABLES);
+  const existingTables = await client.execute(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+  );
 
-  if (!hasAllTables(existingTables, INITIAL_TABLES)) {
-    console.log('Applying initial migration SQL to libSQL database...');
-    await applyMigrationSql(client, INIT_MIGRATION_FILE);
-    existingTables = await getExistingTables(client, REQUIRED_TABLES);
+  if (existingTables.rows.length > 0) {
+    throw new Error(
+      'Incompatible existing libSQL schema detected. Please recreate the database, then redeploy.',
+    );
   }
 
-  if (!hasAllTables(existingTables, ALIGN_TABLES)) {
-    console.log('Applying alignment migration SQL to libSQL database...');
-    await applyMigrationSql(client, ALIGN_MIGRATION_FILE);
+  const sql = runCapture(
+    'npm exec prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script',
+    process.env,
+  );
+
+  if (!sql.trim()) {
+    throw new Error('Generated schema SQL is empty');
   }
 
-  const schemaReady = await hasRequiredSchema(url, authToken);
-  if (!schemaReady) {
-    throw new Error('Schema bootstrap did not produce all required tables');
-  }
+  await client.executeMultiple(sql);
 }
 
 function run(command, env = process.env) {
@@ -111,7 +109,7 @@ async function main() {
 
   if (!schemaReady) {
     if (targetUrl.startsWith('libsql://')) {
-      console.log('Schema missing tables in libSQL database. Applying migration SQL...');
+      console.log('Schema missing tables/columns in libSQL database. Applying schema SQL...');
       await bootstrapLibsqlSchema(targetUrl, authToken);
     } else {
       console.log('Schema missing tables. Running prisma db push...');

@@ -15,6 +15,9 @@ interface Question {
   id: number;
   questionId: string;
   questionText: string;
+  category?: { id: number; name: string } | null;
+  difficulty?: { id: number; name: string } | null;
+  info?: string | null;
   answerA: string;
   answerB: string;
   answerC: string;
@@ -63,7 +66,7 @@ export function QuizActivePage() {
   const { data: round, isLoading } = useQuery<QuizRound>({
     queryKey: ['quiz', id],
     queryFn: () => api.get<QuizRound>(`/quiz/${id}`),
-    refetchInterval: (query: any) => {
+    refetchInterval: (query) => {
       const s = query?.state?.data?.status;
       return s === 'ACTIVE' || s === undefined ? pollMs : false;
     },
@@ -192,6 +195,12 @@ export function QuizActivePage() {
               <div key={rq.id} className="result-question">
                 <p className="result-question-text">
                   <strong>Q{idx + 1}:</strong> {question.questionText}
+                  {question.category?.name && (
+                    <span className="muted"> | Category: {question.category.name}</span>
+                  )}
+                  {question.difficulty?.name && (
+                    <span className="muted"> | Difficulty: {question.difficulty.name}</span>
+                  )}
                 </p>
                 <div className="result-options">
                   {options.map((key) => {
@@ -213,6 +222,11 @@ export function QuizActivePage() {
                     );
                   })}
                 </div>
+                {question.info && (
+                  <p className="muted" style={{ marginTop: '0.5rem' }}>
+                    Info: {question.info}
+                  </p>
+                )}
               </div>
             );
           })}

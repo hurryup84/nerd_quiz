@@ -16,19 +16,41 @@ import {
 import type { Response } from 'express';
 import { readFileSync } from 'node:fs';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { IsString } from 'class-validator';
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../admin/admin.guard';
+
+class CreateNamedMetaDto {
+  @IsString() name!: string;
+}
 
 @Controller('questions')
 @UseGuards(JwtAuthGuard)
 export class QuestionsController {
   constructor(private questionsService: QuestionsService) {}
 
+  @Get('meta')
+  getMeta() {
+    return this.questionsService.getMeta();
+  }
+
   @Get()
   findAll() {
     return this.questionsService.findAll();
+  }
+
+  @UseGuards(AdminGuard)
+  @Post('categories')
+  createCategory(@Body() dto: CreateNamedMetaDto) {
+    return this.questionsService.createCategory(dto.name);
+  }
+
+  @UseGuards(AdminGuard)
+  @Post('difficulties')
+  createDifficulty(@Body() dto: CreateNamedMetaDto) {
+    return this.questionsService.createDifficulty(dto.name);
   }
 
   @Get(':id')

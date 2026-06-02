@@ -17,7 +17,11 @@ export class QuizService {
       where: { status: 'ACTIVE' },
       include: {
         questions: {
-          include: { question: true },
+          include: {
+            question: {
+              include: { category: true, difficulty: true },
+            },
+          },
           orderBy: { order: 'asc' },
         },
         answers: {
@@ -71,7 +75,11 @@ export class QuizService {
       },
       include: {
         questions: {
-          include: { question: true },
+          include: {
+            question: {
+              include: { category: true, difficulty: true },
+            },
+          },
         },
       },
     });
@@ -175,7 +183,11 @@ export class QuizService {
       where: { id },
       include: {
         questions: {
-          include: { question: true },
+          include: {
+            question: {
+              include: { category: true, difficulty: true },
+            },
+          },
           orderBy: { order: 'asc' },
         },
         answers: {
@@ -197,7 +209,11 @@ export class QuizService {
       orderBy: { finishedAt: 'desc' },
       include: {
         questions: {
-          include: { question: true },
+          include: {
+            question: {
+              include: { category: true, difficulty: true },
+            },
+          },
           orderBy: { order: 'asc' },
         },
         answers: {

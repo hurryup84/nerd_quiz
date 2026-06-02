@@ -24,6 +24,9 @@ model Question {
   id            Int             @id @default(autoincrement())
   questionId    String          @unique
   questionText  String
+  categoryId    Int?
+  difficultyId  Int?
+  info          String?
   answerA       String
   answerB       String
   answerC       String
@@ -31,9 +34,31 @@ model Question {
   correctAnswer String
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  category      Category?       @relation(fields: [categoryId], references: [id])
+  difficulty    Difficulty?     @relation(fields: [difficultyId], references: [id])
   roundQuestions RoundQuestion[]
 
   @@index([questionId])
+  @@index([categoryId])
+  @@index([difficultyId])
+}
+
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  questions Question[]
+
+  @@index([name])
+}
+
+model Difficulty {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  questions Question[]
+
+  @@index([name])
 }
 
 model QuizRound {
