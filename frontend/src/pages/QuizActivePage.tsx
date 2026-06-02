@@ -106,9 +106,85 @@ export function QuizActivePage() {
   const renderQuizContent = () => {
     if (isFinished) {
       const options = ['A', 'B', 'C', 'D'] as const;
+
+      const questionByRoundQuestionId = new Map(
+        round.questions.map((rq) => [rq.id, rq.question]),
+      );
+
+      const participantsMap = new Map<number, { id: number; username: string }>();
+      round.finalizations?.forEach((f) => {
+        participantsMap.set(f.user.id, f.user);
+      });
+      round.answers.forEach((a) => {
+        participantsMap.set(a.user.id, a.user);
+      });
+
+      const participantScores = Array.from(participantsMap.values()).map((player) => {
+        const playerAnswers = round.answers.filter((a) => a.user.id === player.id);
+        const correct = playerAnswers.filter((a) => {
+          const question = questionByRoundQuestionId.get(a.roundQuestionId);
+          return question?.correctAnswer === a.selectedAnswer;
+        }).length;
+
+        return {
+          ...player,
+          points: correct,
+        };
+      });
+
+      participantScores.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        return a.username.localeCompare(b.username);
+      });
+
+      const topPoints = participantScores[0]?.points ?? 0;
+      const winners = participantScores.filter((p) => p.points === topPoints);
+
       return (
         <div className="round-results">
           <h3>Round Results</h3>
+
+          <div
+            className="card"
+            style={{ marginBottom: '1.5rem', border: '1px solid var(--border-color)' }}
+          >
+            <h4 style={{ marginBottom: '0.75rem' }}>Summary</h4>
+            {participantScores.length === 0 ? (
+              <p className="muted">No participants found for this round.</p>
+            ) : (
+              <>
+                <p style={{ marginBottom: '0.75rem' }}>
+                  {winners.length > 1 ? (
+                    <>
+                      <strong>Winners (tie):</strong>{' '}
+                      {winners.map((w) => w.username).join(', ')} with {topPoints} point(s)
+                    </>
+                  ) : (
+                    <>
+                      <strong>Winner:</strong> {winners[0].username} with {topPoints} point(s)
+                    </>
+                  )}
+                </p>
+                <table className="results-table">
+                  <thead>
+                    <tr>
+                      <th>Player</th>
+                      <th>Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {participantScores.map((p) => (
+                      <tr key={p.id}>
+                        <td>{p.username}</td>
+                        <td>{p.points}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </div>
+
           {round.questions.map((rq, idx) => {
             const { question } = rq;
             const questionAnswers = round.answers.filter((a) => a.roundQuestionId === rq.id);
