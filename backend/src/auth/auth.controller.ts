@@ -26,12 +26,25 @@ class ChangePasswordDto {
   @IsString() @MinLength(8) newPassword!: string;
 }
 
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: false,
-  sameSite: 'strict' as const,
-  maxAge: 15 * 60 * 1000,
-};
+function getCookieOptions() {
+  const isProduction = process.env['NODE_ENV'] === 'production';
+  const secure =
+    (process.env['COOKIE_SECURE'] ?? (isProduction ? 'true' : 'false')) ===
+    'true';
+  const sameSiteRaw =
+    process.env['COOKIE_SAMESITE'] ?? (isProduction ? 'none' : 'lax');
+  const sameSite =
+    sameSiteRaw === 'none' || sameSiteRaw === 'strict' || sameSiteRaw === 'lax'
+      ? sameSiteRaw
+      : 'lax';
+
+  return {
+    httpOnly: true,
+    secure,
+    sameSite,
+    maxAge: 15 * 60 * 1000,
+  } as const;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -54,14 +67,14 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const token = await this.authService.login(req.user);
-    res.cookie('token', token, COOKIE_OPTIONS);
+    res.cookie('token', token, getCookieOptions());
     return { id: req.user.id, username: req.user.username, role: req.user.role };
   }
 
   @Post('logout')
   @HttpCode(200)
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('token');
+    res.clearCookie('token', getCookieOptions());
     return { message: 'Logged out' };
   }
 

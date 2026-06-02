@@ -6,11 +6,15 @@ import * as path from 'path';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
-    const dbPath = path.resolve(
-      process.cwd(),
-      process.env['DATABASE_URL']?.replace('file:', '') ?? 'prisma/dev.db',
+    const rawUrl = process.env['DATABASE_URL'] ?? 'file:./dev.db';
+    const url = rawUrl.startsWith('file:')
+      ? `file:${path.resolve(process.cwd(), rawUrl.replace('file:', ''))}`
+      : rawUrl;
+    const authToken = process.env['TURSO_AUTH_TOKEN'];
+
+    const adapter = new PrismaLibSql(
+      authToken ? { url, authToken } : { url },
     );
-    const adapter = new PrismaLibSql({ url: `file:${dbPath}` });
     super({ adapter });
   }
 

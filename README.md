@@ -114,3 +114,87 @@ npm --prefix frontend run build
 - The frontend proxies `/api` requests to `http://localhost:3000` in development.
 - The local SQLite database lives at `backend/dev.db`.
 - `setup.sh` is safe to rerun on the same machine. It reuses the existing `backend/.env` and skips reseeding the admin if it already exists.
+
+## Deploy On Render (Free-Tier Friendly)
+
+You can deploy this project with two Render services:
+
+1. Backend as a Web Service (Node)
+2. Frontend as a Static Site
+
+### 1) Prepare a production database URL
+
+Local SQLite (`file:./dev.db`) is fine for development, but not for free cloud runtimes with ephemeral disks.
+
+Use a hosted SQLite-compatible URL instead (for example Turso/libSQL):
+
+- `DATABASE_URL=libsql://...`
+- `TURSO_AUTH_TOKEN=...` (if required by your provider)
+
+### 2) Create the backend service on Render
+
+- Service type: Web Service
+- Root directory: `backend`
+- Build command:
+
+```bash
+npm ci && npm run build && npm exec prisma migrate deploy && npm run seed
+```
+
+- Start command:
+
+```bash
+npm run start:prod
+```
+
+- Required environment variables:
+
+```env
+NODE_ENV=production
+JWT_SECRET=<long-random-secret>
+DATABASE_URL=<your-libsql-or-sqlite-compatible-url>
+TURSO_AUTH_TOKEN=<token-if-required>
+FRONTEND_URL=https://<your-frontend>.onrender.com
+COOKIE_SECURE=true
+COOKIE_SAMESITE=none
+```
+
+Notes:
+
+- Render injects `PORT` automatically; backend now listens on it.
+- `npm run seed` is safe to rerun. It skips the admin user if already present.
+
+### 3) Create the frontend static site on Render
+
+- Service type: Static Site
+- Root directory: `frontend`
+- Build command:
+
+```bash
+npm ci && npm run build
+```
+
+- Publish directory:
+
+```bash
+dist
+```
+
+- Environment variable:
+
+```env
+VITE_API_BASE_URL=https://<your-backend>.onrender.com/api
+```
+
+### 4) Post-deploy checks
+
+1. Open the frontend URL and register/login.
+2. Verify login persists (cookie auth).
+3. Test quiz start/answer/history flows.
+4. Confirm backend logs show successful Prisma connection.
+
+### 5) Free-tier caveats
+
+- Free instances can sleep. First request after inactivity can be slow.
+- Avoid writing app state to local disk in cloud runtime.
+- If you need guaranteed persistence and low cold-start, move to a paid plan.
