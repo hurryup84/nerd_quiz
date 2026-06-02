@@ -3,6 +3,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useRef,
   type ReactNode,
 } from 'react';
 import { api } from '../api/client';
@@ -26,13 +27,28 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const authCheckVersion = useRef(0);
 
   useEffect(() => {
+    const version = ++authCheckVersion.current;
+
     api
       .get<User>('/auth/me')
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+      .then((currentUser) => {
+        if (authCheckVersion.current === version) {
+          setUser(currentUser);
+        }
+      })
+      .catch(() => {
+        if (authCheckVersion.current === version) {
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (authCheckVersion.current === version) {
+          setLoading(false);
+        }
+      });
 
     // Fetch and apply theme
     api.get<{ theme: string; refreshInterval: number }>('/settings')
@@ -45,8 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string) => {
+    // Invalidate any in-flight /auth/me result from initial app bootstrap.
+    authCheckVersion.current += 1;
     const u = await api.post<User>('/auth/login', { username, password });
     setUser(u);
+    setLoading(false);
   };
 
   const register = async (username: string, password: string) => {
