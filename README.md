@@ -164,6 +164,7 @@ Notes:
 
 - Render injects `PORT` automatically; backend now listens on it.
 - `npm run bootstrap:db` checks if required tables already exist in Turso. It only runs `prisma db push` when tables are missing, and then runs seed.
+- For `libsql://` targets (Turso), `npm run bootstrap:db` applies checked-in SQL migration files directly instead of `prisma db push`, then seeds.
 - `npm run start:render` runs the same safe bootstrap at runtime before starting the backend, which avoids `no such table` errors if the runtime instance starts with a fresh local filesystem.
 
 ### 3) Create the frontend static site on Render
