@@ -15,7 +15,16 @@ async function parseResponseBody<T>(res: Response): Promise<T> {
     return JSON.parse(text) as T;
   }
 
-  return text as T;
+  const maybeHtml = text.trim().startsWith('<!DOCTYPE html') || text.trim().startsWith('<html');
+  if (maybeHtml) {
+    throw new Error(
+      'API returned HTML instead of JSON. Check VITE_API_BASE_URL and ensure frontend rewrites do not intercept API routes.',
+    );
+  }
+
+  throw new Error(
+    `Unexpected API response content-type: ${contentType || 'unknown'}. Expected application/json.`,
+  );
 }
 
 async function request<T>(
