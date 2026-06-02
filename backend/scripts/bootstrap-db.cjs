@@ -4,6 +4,8 @@ const os = require('node:os');
 const path = require('node:path');
 const { createClient } = require('@libsql/client');
 
+const PRISMA_BIN = './node_modules/.bin/prisma';
+
 const REQUIRED_TABLES = [
   'User',
   'Question',
@@ -88,7 +90,7 @@ async function bootstrapLibsqlSchema(url, authToken) {
   );
 
   run(
-    `npm exec prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script --output "${tempSqlFile}"`,
+    `${PRISMA_BIN} migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script --output "${tempSqlFile}"`,
     process.env,
   );
 
