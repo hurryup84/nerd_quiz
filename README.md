@@ -196,6 +196,7 @@ VITE_API_BASE_URL=https://<your-backend>.onrender.com/api
 2. Verify login persists (cookie auth).
 3. Test quiz start/answer/history flows.
 4. Confirm backend logs show successful Prisma connection.
+5. Health endpoint responds at `https://<your-backend>.onrender.com/api/health`.
 
 ### 5) Free-tier caveats
 
