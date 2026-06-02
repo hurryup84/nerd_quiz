@@ -1,4 +1,7 @@
 const { execSync } = require('node:child_process');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { createClient } = require('@libsql/client');
 
 const REQUIRED_TABLES = [
@@ -79,16 +82,31 @@ async function bootstrapLibsqlSchema(url, authToken) {
     );
   }
 
-  const sql = runCapture(
-    'npm exec prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script',
+  const tempSqlFile = path.join(
+    os.tmpdir(),
+    `nerd-quiz-bootstrap-${Date.now()}.sql`,
+  );
+
+  run(
+    `npm exec prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script --output "${tempSqlFile}"`,
     process.env,
   );
 
+  const sql = fs.existsSync(tempSqlFile)
+    ? fs.readFileSync(tempSqlFile, 'utf8')
+    : '';
+
   if (!sql.trim()) {
-    throw new Error('Generated schema SQL is empty');
+    throw new Error(
+      'Generated schema SQL is empty. Ensure Prisma CLI is available during build and retry deployment.',
+    );
   }
 
   await client.executeMultiple(sql);
+
+  if (fs.existsSync(tempSqlFile)) {
+    fs.unlinkSync(tempSqlFile);
+  }
 }
 
 function run(command, env = process.env) {
