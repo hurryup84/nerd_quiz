@@ -35,24 +35,22 @@ function run(command, env = process.env) {
 }
 
 async function main() {
-  const tursoUrl = process.env.TURSO_DATABASE_URL;
-
-  if (!tursoUrl) {
-    console.log('No TURSO_DATABASE_URL set. Skipping remote schema bootstrap.');
-    return;
-  }
+  const targetUrl =
+    process.env.TURSO_DATABASE_URL ??
+    process.env.DATABASE_URL ??
+    'file:./dev.db';
 
   const authToken = process.env.TURSO_AUTH_TOKEN;
-  const schemaReady = await hasRequiredSchema(tursoUrl, authToken);
+  const schemaReady = await hasRequiredSchema(targetUrl, authToken);
 
   if (!schemaReady) {
-    console.log('Remote schema missing tables. Running prisma db push...');
+    console.log('Schema missing tables. Running prisma db push...');
     run('npm exec prisma db push --skip-generate', {
       ...process.env,
-      DATABASE_URL: tursoUrl,
+      DATABASE_URL: targetUrl,
     });
   } else {
-    console.log('Remote schema already present. Skipping schema update.');
+    console.log('Schema already present. Skipping schema update.');
   }
 
   console.log('Running seed...');
