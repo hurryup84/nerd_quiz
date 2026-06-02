@@ -1,5 +1,23 @@
 const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api';
 
+async function parseResponseBody<T>(res: Response): Promise<T> {
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  const text = await res.text();
+  if (!text) {
+    return undefined as T;
+  }
+
+  const contentType = res.headers.get('content-type') ?? '';
+  if (contentType.includes('application/json')) {
+    return JSON.parse(text) as T;
+  }
+
+  return text as T;
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -10,11 +28,11 @@ async function request<T>(
     ...options,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message ?? res.statusText);
+    const body = await parseResponseBody<{ message?: string }>(res).catch(() => undefined);
+    throw new Error(body?.message ?? res.statusText);
   }
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+
+  return parseResponseBody<T>(res);
 }
 
 export const api = {
