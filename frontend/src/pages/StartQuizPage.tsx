@@ -12,8 +12,8 @@ interface Question {
 export function StartQuizPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [questionCount, setQuestionCount] = useState(5);
-  const [participants, setParticipants] = useState(2);
+  const [questionCount, setQuestionCount] = useState(4);
+  const [participants, setParticipants] = useState(3);
   const [timeout, setTimeout] = useState<number | ''>('');
   const [error, setError] = useState('');
 

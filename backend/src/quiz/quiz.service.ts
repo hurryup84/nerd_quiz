@@ -46,7 +46,7 @@ export class QuizService {
       throw new BadRequestException('No questions available to start a round');
     }
 
-    const requestedQuestionCount = dto.questionCount ?? 1;
+    const requestedQuestionCount = dto.questionCount ?? 4;
     const questionCount = Math.min(requestedQuestionCount, allQuestions.length);
 
     const shuffled = [...allQuestions];

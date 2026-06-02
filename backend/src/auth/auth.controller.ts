@@ -18,12 +18,12 @@ import { IsString, MinLength } from 'class-validator';
 
 class RegisterDto {
   @IsString() username!: string;
-  @IsString() @MinLength(8) password!: string;
+  @IsString() @MinLength(4) password!: string;
 }
 
 class ChangePasswordDto {
   @IsString() currentPassword!: string;
-  @IsString() @MinLength(8) newPassword!: string;
+  @IsString() @MinLength(4) newPassword!: string;
 }
 
 function getCookieOptions() {

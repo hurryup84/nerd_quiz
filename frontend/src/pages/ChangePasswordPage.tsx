@@ -21,8 +21,8 @@ export function ChangePasswordPage() {
       setError('Passwords do not match');
       return;
     }
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (newPassword.length < 4) {
+      setError('Password must be at least 4 characters');
       return;
     }
     setLoading(true);
@@ -57,7 +57,7 @@ export function ChangePasswordPage() {
             />
           </div>
           <div className="form-group">
-            <label>New Password (min 8 characters)</label>
+            <label>New Password (min 4 characters)</label>
             <input
               type="password"
               value={newPassword}

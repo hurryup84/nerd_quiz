@@ -18,8 +18,8 @@ export function RegisterPage() {
       setError('Passwords do not match');
       return;
     }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (password.length < 4) {
+      setError('Password must be at least 4 characters');
       return;
     }
     setLoading(true);
@@ -50,7 +50,7 @@ export function RegisterPage() {
             />
           </div>
           <div className="form-group">
-            <label>Password (min 8 characters)</label>
+            <label>Password (min 4 characters)</label>
             <input
               type="password"
               value={password}
