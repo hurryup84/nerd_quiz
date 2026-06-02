@@ -3,6 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useRef } from 'react';
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api';
+
+async function readJsonSafe<T>(res: Response): Promise<T | undefined> {
+  const text = await res.text();
+  if (!text) return undefined;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return undefined;
+  }
+}
+
 interface Question {
   id: number;
   questionId: string;
@@ -62,7 +74,11 @@ export function AdminQuestionsPage() {
   const isLoading = questionsLoading || settingsLoading;
 
   async function handleExport() {
-    const res = await fetch('/api/questions/export/csv', { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/questions/export/csv`, { credentials: 'include' });
+    if (!res.ok) {
+      alert(`Export failed: ${res.status} ${res.statusText}`);
+      return;
+    }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -77,19 +93,21 @@ export function AdminQuestionsPage() {
     if (!file) return;
     const form = new FormData();
     form.append('file', file);
-    const res = await fetch('/api/questions/import/csv', {
+    const res = await fetch(`${API_BASE}/questions/import/csv`, {
       method: 'POST',
       credentials: 'include',
       body: form,
     });
     if (!res.ok) {
-      const err = await res.json() as { message: string | string[] };
-      const msg = Array.isArray(err.message) ? err.message[0] : err.message;
-      alert(`Import failed: ${msg}`);
+      const err = await readJsonSafe<{ message?: string | string[] }>(res);
+      const msg = Array.isArray(err?.message)
+        ? err?.message[0]
+        : err?.message;
+      alert(`Import failed: ${msg ?? `${res.status} ${res.statusText}`}`);
       return;
     }
-    const data = await res.json() as { imported: number };
-    alert(`Imported ${data.imported} question(s).`);
+    const data = await readJsonSafe<{ imported?: number }>(res);
+    alert(`Imported ${data?.imported ?? 0} question(s).`);
     queryClient.invalidateQueries({ queryKey: ['questions'] });
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
