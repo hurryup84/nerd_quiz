@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "npm exec prisma generate && nest build",
+    "bootstrap:db": "node scripts/bootstrap-db.cjs",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

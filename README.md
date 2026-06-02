@@ -138,7 +138,7 @@ Use a hosted SQLite-compatible URL instead (for example Turso/libSQL):
 - Build command:
 
 ```bash
-npm install --include=dev && npm run build && npm run seed
+npm install --include=dev && npm run build && npm run bootstrap:db
 ```
 
 - Start command:
@@ -163,8 +163,7 @@ COOKIE_SAMESITE=none
 Notes:
 
 - Render injects `PORT` automatically; backend now listens on it.
-- `npm run seed` is safe to rerun. It skips the admin user if already present.
-- For Turso/libSQL, Prisma schema migrations are not applied with `prisma migrate deploy` using `libsql://` in this setup. Apply schema changes separately via Turso tooling (`prisma migrate diff` + Turso CLI), then redeploy.
+- `npm run bootstrap:db` checks if required tables already exist in Turso. It only runs `prisma db push` when tables are missing, and then runs seed.
 
 ### 3) Create the frontend static site on Render
 
