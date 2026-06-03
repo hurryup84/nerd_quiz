@@ -16,6 +16,9 @@ const REQUIRED_TABLES = [
   'Settings',
   'Answer',
   'RoundFinalization',
+  'Team',
+  'UserTeam',
+  'TeamInvite',
 ];
 
 const REQUIRED_QUESTION_COLUMNS = [

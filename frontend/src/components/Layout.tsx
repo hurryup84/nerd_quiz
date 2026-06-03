@@ -17,6 +17,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <Link to="/" className="nav-brand">🧠 Nerd Quiz</Link>
         <div className="nav-links">
           <Link to="/">Dashboard</Link>
+          <Link to="/teams">Teams</Link>
           <Link to="/history">History</Link>
           <Link to="/insights">Insights</Link>
           <Link to="/questions/new">+ Question</Link>

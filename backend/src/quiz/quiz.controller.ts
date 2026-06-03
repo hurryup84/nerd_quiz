@@ -20,32 +20,47 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class QuizController {
   constructor(private quizService: QuizService) {}
 
-  @Get('active')
-  getActive() {
-    return this.quizService.getActiveRound();
+  @Get('active-rounds')
+  getActiveRounds(@Request() req: { user: { id: number } }) {
+    return this.quizService.getActiveRoundsForUser(req.user.id);
   }
 
   @Get('last')
-  getLast() {
-    return this.quizService.getLastFinishedRound();
+  getLast(@Request() req: { user: { id: number } }) {
+    return this.quizService.getLastFinishedRound(req.user.id);
   }
 
   @Get('history')
-  getHistory(@Query('page') page = '1') {
-    return this.quizService.getHistory(Number(page));
+  getHistory(
+    @Request() req: { user: { id: number; role: string } },
+    @Query('page') page = '1',
+    @Query('teamId') teamId?: string,
+  ) {
+    return this.quizService.getHistory(req.user, Number(page), teamId);
   }
 
   @Get('insights')
-  getInsights() {
-    return this.quizService.getInsights();
+  getInsights(
+    @Request() req: { user: { id: number; role: string } },
+    @Query('teamId') teamId?: string,
+  ) {
+    return this.quizService.getInsights(req.user, teamId);
   }
+
   @Get('activity')
-  getActivity() {
-    return this.quizService.getActivityStats();
+  getActivity(
+    @Request() req: { user: { id: number; role: string } },
+    @Query('teamId') teamId?: string,
+  ) {
+    return this.quizService.getActivityStats(req.user, teamId);
   }
+
   @Get(':id')
-  getOne(@Param('id', ParseIntPipe) id: number) {
-    return this.quizService.getRound(id);
+  getOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: { user: { id: number; role: string } },
+  ) {
+    return this.quizService.getRound(id, req.user);
   }
 
   @Post()
@@ -74,7 +89,10 @@ export class QuizController {
   }
 
   @Delete(':id')
-  cancel(@Param('id', ParseIntPipe) id: number) {
-    return this.quizService.cancelRound(id);
+  cancel(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: { user: { id: number; role: string } },
+  ) {
+    return this.quizService.cancelRound(id, req.user);
   }
 }

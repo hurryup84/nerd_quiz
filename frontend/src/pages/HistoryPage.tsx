@@ -2,11 +2,17 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import {
+  TeamFilterSelect,
+  withTeamFilter,
+  type TeamFilterValue,
+} from '../components/TeamFilterSelect';
 
 interface HistoryRound {
   id: number;
   status: string;
   createdAt: string;
+  team?: { id: string; name: string } | null;
   questions: { question: { questionId: string; questionText: string } }[];
   _count: { finalizations: number };
 }
@@ -20,10 +26,14 @@ interface HistoryResponse {
 
 export function HistoryPage() {
   const [page, setPage] = useState(1);
+  const [teamFilter, setTeamFilter] = useState<TeamFilterValue>('all');
 
   const { data, isLoading } = useQuery<HistoryResponse>({
-    queryKey: ['history', page],
-    queryFn: () => api.get<HistoryResponse>(`/quiz/history?page=${page}`),
+    queryKey: ['history', page, teamFilter],
+    queryFn: () =>
+      api.get<HistoryResponse>(
+        withTeamFilter(`/quiz/history?page=${page}`, teamFilter),
+      ),
     staleTime: 1000 * 60 * 5,
   });
 
@@ -35,10 +45,18 @@ export function HistoryPage() {
     <div className="page">
       <div className="card">
         <h2>History</h2>
+        <TeamFilterSelect
+          value={teamFilter}
+          onChange={(v) => {
+            setTeamFilter(v);
+            setPage(1);
+          }}
+        />
         <table className="results-table">
           <thead>
             <tr>
               <th>Date</th>
+              <th>Team</th>
               <th>Topic / First Q</th>
               <th>Questions</th>
               <th>Participants</th>
@@ -50,6 +68,7 @@ export function HistoryPage() {
             {data?.rounds.map((r) => (
               <tr key={r.id}>
                 <td>{new Date(r.createdAt).toLocaleDateString()}</td>
+                <td>{r.team?.name ?? 'Global'}</td>
                 <td>
                   {r.status === 'FINISHED' ? (
                     <Link to={`/quiz/${r.id}`}>
@@ -68,7 +87,9 @@ export function HistoryPage() {
                 </td>
                 <td>
                   {r.status === 'FINISHED' && (
-                    <Link to={`/quiz/${r.id}`} className="btn btn-sm">Results</Link>
+                    <Link to={`/quiz/${r.id}`} className="btn btn-sm">
+                      Results
+                    </Link>
                   )}
                 </td>
               </tr>

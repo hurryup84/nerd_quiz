@@ -51,4 +51,24 @@ export const api = {
   put: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  teams: {
+    create: (data: { name: string; description?: string }) =>
+      request('/teams', { method: 'POST', body: JSON.stringify(data) }),
+    getMyTeams: () => request('/teams/me'),
+    getFilterOptions: () => request('/teams/all'),
+    getMembers: (teamId: string) => request(`/teams/${teamId}/members`),
+    invite: (teamId: string, username: string) =>
+      request(`/teams/${teamId}/invites`, {
+        method: 'POST',
+        body: JSON.stringify({ username }),
+      }),
+    getMyInvites: () => request('/teams/invites/me'),
+    acceptInvite: (inviteId: number) =>
+      request(`/teams/invites/${inviteId}/accept`, { method: 'POST' }),
+    declineInvite: (inviteId: number) =>
+      request(`/teams/invites/${inviteId}/decline`, { method: 'POST' }),
+    leave: (teamId: string) =>
+      request(`/teams/${teamId}/leave`, { method: 'POST' }),
+    delete: (teamId: string) => request(`/teams/${teamId}`, { method: 'DELETE' }),
+  },
 };

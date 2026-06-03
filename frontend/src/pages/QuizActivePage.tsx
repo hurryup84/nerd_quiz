@@ -45,6 +45,8 @@ interface QuizRound {
   finalizations: Finalization[];
   createdAt: string;
   finishedAt?: string;
+  createdBy?: { id: number; username: string };
+  team?: { id: string; name: string } | null;
 }
 
 export function QuizActivePage() {
@@ -102,6 +104,9 @@ export function QuizActivePage() {
   const myAnswers = round.answers.filter((a) => a.user.id === user?.id);
   const isFinished = round.status === 'FINISHED';
   const isCancelled = round.status === 'CANCELLED';
+  const canCancel =
+    round.status === 'ACTIVE' &&
+    (round.createdBy?.id === user?.id || user?.role === 'ADMIN');
 
   const currentRQ = round.questions[currentIdx];
   const currentAnswer = myAnswers.find((a) => a.roundQuestionId === currentRQ?.id);
@@ -371,7 +376,12 @@ export function QuizActivePage() {
     <div className="page">
       <div className="card">
         <div className="card-header">
-          <h2>Quiz Round #{round.id}</h2>
+          <h2>
+            Quiz Round #{round.id}
+            <span className="muted" style={{ fontSize: '0.85rem', marginLeft: '0.75rem' }}>
+              ({round.team?.name ?? 'Global'})
+            </span>
+          </h2>
           <div style={{ textAlign: 'right' }}>
             <span className={`badge badge-${round.status.toLowerCase()}`}>
               {round.status}
@@ -381,7 +391,7 @@ export function QuizActivePage() {
 
         {renderQuizContent()}
 
-        {round.status === 'ACTIVE' && (
+        {canCancel && (
           <div style={{ marginTop: '3rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
             {!showCancelConfirm ? (
               <button

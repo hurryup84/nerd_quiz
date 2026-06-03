@@ -9,6 +9,13 @@ interface Question {
   questionText: string;
 }
 
+interface UserTeam {
+  role: string;
+  team: { id: string; name: string };
+}
+
+type ScopeValue = 'global' | string;
+
 export function StartQuizPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -16,12 +23,27 @@ export function StartQuizPage() {
   const [participants, setParticipants] = useState(3);
   const [timeout, setTimeout] = useState<number | ''>('');
   const [error, setError] = useState('');
+  const [scope, setScope] = useState<ScopeValue>('global');
 
   const { data: questions = [], isLoading } = useQuery<Question[]>({
     queryKey: ['questions'],
     queryFn: () => api.get<Question[]>('/questions'),
     staleTime: 1000 * 60 * 10,
   });
+
+  const { data: myTeams = [] } = useQuery<UserTeam[]>({
+    queryKey: ['teams', 'me'],
+    queryFn: () => api.teams.getMyTeams() as Promise<UserTeam[]>,
+    staleTime: 1000 * 60,
+  });
+
+  useEffect(() => {
+    if (myTeams.length === 1) {
+      setScope(myTeams[0].team.id);
+    } else if (myTeams.length === 0) {
+      setScope('global');
+    }
+  }, [myTeams]);
 
   const maxQuestionCount = questions.length;
 
@@ -36,14 +58,14 @@ export function StartQuizPage() {
       questionCount: number;
       requiredParticipants: number;
       timeoutMinutes?: number;
+      teamId?: string;
     }) => api.post<{ id: number }>('/quiz', data),
     onSuccess: (round) => {
       void queryClient.invalidateQueries({ queryKey: ['quiz'] });
       navigate(`/quiz/${round.id}`);
     },
-    onError: (err: any) => {
-      const msg = err.response?.data?.message || err.message;
-      setError(Array.isArray(msg) ? msg[0] : msg);
+    onError: (err: Error) => {
+      setError(err.message);
     },
   });
 
@@ -65,12 +87,23 @@ export function StartQuizPage() {
       setError('Required participants must be a positive integer');
       return;
     }
-    
-    createMutation.mutate({
+
+    const payload: {
+      questionCount: number;
+      requiredParticipants: number;
+      timeoutMinutes?: number;
+      teamId?: string;
+    } = {
       questionCount,
       requiredParticipants: participants,
       timeoutMinutes: timeout ? Number(timeout) : undefined,
-    });
+    };
+
+    if (scope !== 'global') {
+      payload.teamId = scope;
+    }
+
+    createMutation.mutate(payload);
   };
 
   if (isLoading) return <div className="loading">Loading questions…</div>;
@@ -87,6 +120,27 @@ export function StartQuizPage() {
           </p>
         ) : (
           <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Quiz scope</label>
+              <select
+                value={scope}
+                onChange={(e) => setScope(e.target.value)}
+                required
+              >
+                <option value="global">Global (everyone can join)</option>
+                {myTeams.map(({ team }) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+              {myTeams.length === 0 && (
+                <small className="muted">
+                  No teams yet — this round is open to all users.{' '}
+                  <a href="/teams">Create a team</a>
+                </small>
+              )}
+            </div>
             <div className="form-group">
               <label>Number of Questions</label>
               <input
@@ -118,7 +172,9 @@ export function StartQuizPage() {
                 min="1"
                 step="1"
                 value={timeout}
-                onChange={(e) => setTimeout(e.target.value === '' ? '' : Number(e.target.value))}
+                onChange={(e) =>
+                  setTimeout(e.target.value === '' ? '' : Number(e.target.value))
+                }
                 placeholder="Leave empty for no timeout"
               />
             </div>

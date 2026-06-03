@@ -34,6 +34,11 @@ interface QuizRound {
   finalizations: Finalization[];
   createdBy: { id: number; username: string };
   finishedAt?: string;
+  team?: { id: string; name: string } | null;
+}
+
+function teamLabel(round: QuizRound): string {
+  return round.team?.name ?? 'Global';
 }
 
 export function DashboardPage() {
@@ -48,17 +53,18 @@ export function DashboardPage() {
 
   const pollMs = (settings?.refreshInterval ?? 5) * 1000;
 
-  const { data: activeRound, isLoading: activeLoading } = useQuery<QuizRound | null>({
-    queryKey: ['quiz', 'active'],
-    queryFn: () => api.get<QuizRound | null>('/quiz/active'),
-    refetchInterval: (data: any) => (data ? pollMs : 5000),
+  const { data: activeRounds = [], isLoading: activeLoading } = useQuery<QuizRound[]>({
+    queryKey: ['quiz', 'active-rounds'],
+    queryFn: () => api.get<QuizRound[]>('/quiz/active-rounds'),
+    refetchInterval: (query) =>
+      (query.state.data?.length ?? 0) > 0 ? pollMs : 5000,
     staleTime: 2000,
   });
 
   const { data: lastRound } = useQuery<QuizRound | null>({
     queryKey: ['quiz', 'last'],
     queryFn: () => api.get<QuizRound | null>('/quiz/last'),
-    enabled: !activeRound,
+    enabled: activeRounds.length === 0,
     staleTime: 1000 * 60,
   });
 
@@ -71,66 +77,78 @@ export function DashboardPage() {
 
   if (activeLoading) return <div className="loading">Loading…</div>;
 
-  const isFinalized = activeRound?.finalizations?.some((f) => f.user.id === user?.id);
-
   return (
     <div className="page">
-      {activeRound ? (
-        <div className="card">
-          <div className="card-header">
-            <h2>Active Quiz Round #{activeRound.id}</h2>
-            <span className="badge badge-active">ACTIVE</span>
-          </div>
-          <p className="question-text">
-            This round contains <strong>{activeRound.questions.length}</strong> question(s).
-          </p>
-
-          <div className="progress-bar-label">
-            Finalized: {activeRound.finalizations?.length ?? 0} / {activeRound.requiredParticipants}
-          </div>
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{
-                width: `${((activeRound.finalizations?.length ?? 0) / activeRound.requiredParticipants) * 100}%`,
-              }}
-            />
-          </div>
-
-          {!isFinalized ? (
-            <button
-              className="btn btn-primary"
-              onClick={() => navigate(`/quiz/${activeRound.id}`)}
-              style={{ padding: '1rem 2rem', fontSize: '1.2rem' }}
-            >
-              {activeRound.answers.some(a => a.user.id === user?.id) ? 'Continue Quiz' : 'Join & Start Quiz'}
-            </button>
-          ) : (
-            <div className="my-answer">
-              <p>
-                ✅ <strong>You have finished your part.</strong>
-              </p>
-              <p className="muted">Waiting for other participants to finalize their rounds…</p>
-            </div>
-          )}
-
-          <div className="participants-list" style={{ marginTop: '1.5rem' }}>
-            {activeRound.finalizations?.map((f) => (
-              <span key={f.user.id} className="badge-participant" style={{ backgroundColor: 'var(--primary-color)', color: 'var(--accent)' }}>
-                {f.user.username} (Done)
-              </span>
-            ))}
-          </div>
-
-          <div style={{ marginTop: '2rem' }}>
-            <button
-              className="btn btn-sm"
-              onClick={() => navigate(`/quiz/${activeRound.id}`)}
-            >
-              View Round Details
+      {activeRounds.length > 0 ? (
+        <>
+          <div className="card-header" style={{ marginBottom: '1rem' }}>
+            <h2>Active Quiz Rounds</h2>
+            <button className="btn btn-primary" onClick={() => navigate('/quiz/start')}>
+              Start New Quiz
             </button>
           </div>
-        </div>
+          {activeRounds.map((activeRound) => {
+            const isFinalized = activeRound.finalizations?.some(
+              (f) => f.user.id === user?.id,
+            );
+            return (
+              <div key={activeRound.id} className="card" style={{ marginBottom: '1rem' }}>
+                <div className="card-header">
+                  <h3>
+                    Round #{activeRound.id} — {teamLabel(activeRound)}
+                  </h3>
+                  <span className="badge badge-active">ACTIVE</span>
+                </div>
+                <p className="question-text">
+                  <strong>{activeRound.questions.length}</strong> question(s)
+                </p>
+
+                <div className="progress-bar-label">
+                  Finalized: {activeRound.finalizations?.length ?? 0} /{' '}
+                  {activeRound.requiredParticipants}
+                </div>
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${((activeRound.finalizations?.length ?? 0) / activeRound.requiredParticipants) * 100}%`,
+                    }}
+                  />
+                </div>
+
+                {!isFinalized ? (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => navigate(`/quiz/${activeRound.id}`)}
+                    style={{ padding: '1rem 2rem', fontSize: '1.1rem', marginTop: '1rem' }}
+                  >
+                    {activeRound.answers.some((a) => a.user.id === user?.id)
+                      ? 'Continue Quiz'
+                      : 'Join & Start Quiz'}
+                  </button>
+                ) : (
+                  <div className="my-answer" style={{ marginTop: '1rem' }}>
+                    <p>
+                      ✅ <strong>You have finished your part.</strong>
+                    </p>
+                    <p className="muted">
+                      Waiting for other participants to finalize…
+                    </p>
+                  </div>
+                )}
+
+                <div style={{ marginTop: '1rem' }}>
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => navigate(`/quiz/${activeRound.id}`)}
+                  >
+                    View Round Details
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </>
       ) : (
         <div className="card">
           <div className="card-header">
@@ -149,9 +167,10 @@ export function DashboardPage() {
 
           {lastRound && (
             <div className="last-round">
-              <h3>Last Completed Round #{lastRound.id}</h3>
+              <h3>
+                Last Completed Round #{lastRound.id} ({teamLabel(lastRound)})
+              </h3>
               <p>Questions: {lastRound.questions.length}</p>
-              <p>Participants: {lastRound.requiredParticipants}</p>
               <button className="btn btn-sm" onClick={() => navigate('/history')}>
                 View Full History
               </button>
