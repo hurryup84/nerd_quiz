@@ -62,6 +62,13 @@ export function DashboardPage() {
     staleTime: 1000 * 60,
   });
 
+  const { data: questionCountData, isLoading: countLoading } = useQuery<{ total: number }>({
+    queryKey: ['questions', 'count'],
+    queryFn: () => api.get<{ total: number }>('/questions/count'),
+    retry: 3,
+    staleTime: 1000 * 60,
+  });
+
   if (activeLoading) return <div className="loading">Loading…</div>;
 
   const isFinalized = activeRound?.finalizations?.some((f) => f.user.id === user?.id);
@@ -109,7 +116,7 @@ export function DashboardPage() {
 
           <div className="participants-list" style={{ marginTop: '1.5rem' }}>
             {activeRound.finalizations?.map((f) => (
-              <span key={f.user.id} className="badge-participant" style={{ backgroundColor: 'var(--primary-color)', color: 'black' }}>
+              <span key={f.user.id} className="badge-participant" style={{ backgroundColor: 'var(--primary-color)', color: 'var(--accent)' }}>
                 {f.user.username} (Done)
               </span>
             ))}
@@ -131,6 +138,13 @@ export function DashboardPage() {
             <button className="btn btn-primary" onClick={() => navigate('/quiz/start')}>
               Start New Quiz
             </button>
+          </div>
+
+          <div className="card" style={{ marginTop: '1rem', textAlign: 'center' }}>
+            <h3>📚 Available Questions</h3>
+            <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0' }}>
+              {countLoading ? '…' : questionCountData?.total ?? '…'}
+            </p>
           </div>
 
           {lastRound && (
