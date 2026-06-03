@@ -109,7 +109,7 @@ export function DashboardPage() {
 
           <div className="participants-list" style={{ marginTop: '1.5rem' }}>
             {activeRound.finalizations?.map((f) => (
-              <span key={f.user.id} className="participant-badge" style={{ backgroundColor: 'var(--primary-color)', color: 'black' }}>
+              <span key={f.user.id} className="badge-participant" style={{ backgroundColor: 'var(--primary-color)', color: 'black' }}>
                 {f.user.username} (Done)
               </span>
             ))}
