@@ -23,7 +23,26 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  async changePassword(id: number, currentPassword: string, newPassword: string) {
+  async findAll() {
+    return this.prisma.user.findMany({
+      select: { id: true, username: true, role: true, createdAt: true },
+      orderBy: { username: 'asc' },
+    });
+  }
+
+  async searchUsers(query: string) {
+    return this.prisma.user.findMany({
+      where: { username: { contains: query } },
+      select: { id: true, username: true, role: true },
+      take: 20,
+    });
+  }
+
+  async changePassword(
+    id: number,
+    currentPassword: string,
+    newPassword: string,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new ConflictException('User not found');
     const valid = await argon2.verify(user.passwordHash, currentPassword);

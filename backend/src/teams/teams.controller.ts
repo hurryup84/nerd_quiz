@@ -11,7 +11,10 @@ import {
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
+import { AddMemberDto } from './dto/add-member.dto';
+import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminGuard } from '../admin/admin.guard';
 
 @Controller('teams')
 @UseGuards(JwtAuthGuard)
@@ -88,8 +91,11 @@ export class TeamsController {
   @Delete(':id')
   delete(
     @Param('id') id: string,
-    @Request() req: { user: { id: number } },
+    @Request() req: { user: { id: number; role: string } },
   ) {
+    if (req.user.role === 'ADMIN') {
+      return this.teamsService.deleteTeamAsAdmin(id);
+    }
     return this.teamsService.deleteTeam(id, req.user.id);
   }
 
@@ -107,5 +113,52 @@ export class TeamsController {
     @Request() req: { user: { id: number } },
   ) {
     return this.teamsService.revokeInvite(Number(inviteId), req.user.id);
+  }
+
+  // ── Admin-only endpoints ──────────────────────────────────────
+
+  @Get(':id')
+  @UseGuards(AdminGuard)
+  getTeam(@Param('id') id: string) {
+    return this.teamsService.getTeamById(id);
+  }
+
+  @Post(':id/members')
+  @UseGuards(AdminGuard)
+  addMember(
+    @Param('id') id: string,
+    @Body() dto: AddMemberDto,
+  ) {
+    return this.teamsService.addMember(id, dto.userId);
+  }
+
+  @Delete(':id/members/:userId')
+  @UseGuards(AdminGuard)
+  removeMember(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
+    return this.teamsService.removeMember(id, Number(userId));
+  }
+
+  @Post(':id/transfer')
+  @UseGuards(AdminGuard)
+  transferOwnership(
+    @Param('id') id: string,
+    @Body() dto: TransferOwnershipDto,
+  ) {
+    return this.teamsService.transferOwnership(id, dto.newOwnerId);
+  }
+
+  @Get(':id/invites/pending')
+  @UseGuards(AdminGuard)
+  getPendingInvitesAdmin(@Param('id') id: string) {
+    return this.teamsService.getPendingInvitesAdmin(id);
+  }
+
+  @Delete('invites/:inviteId/admin')
+  @UseGuards(AdminGuard)
+  revokeInviteAdmin(@Param('inviteId') inviteId: string) {
+    return this.teamsService.revokeInviteAdmin(Number(inviteId));
   }
 }

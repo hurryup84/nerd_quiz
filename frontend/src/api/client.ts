@@ -74,5 +74,21 @@ export const api = {
     leave: (teamId: string) =>
       request(`/teams/${teamId}/leave`, { method: 'POST' }),
     delete: (teamId: string) => request(`/teams/${teamId}`, { method: 'DELETE' }),
+    // Admin endpoints
+    getTeam: (teamId: string) => request(`/teams/${teamId}`),
+    addMember: (teamId: string, userId: number) =>
+      request(`/teams/${teamId}/members`, { method: 'POST', body: JSON.stringify({ userId }) }),
+    removeMember: (teamId: string, userId: number) =>
+      request(`/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
+    transferOwnership: (teamId: string, newOwnerId: number) =>
+      request(`/teams/${teamId}/transfer`, { method: 'POST', body: JSON.stringify({ newOwnerId }) }),
+    getPendingInvitesAdmin: (teamId: string) =>
+      request(`/teams/${teamId}/invites/pending`),
+    revokeInviteAdmin: (inviteId: number) =>
+      request(`/teams/invites/${inviteId}/admin`, { method: 'DELETE' }),
+  },
+  users: {
+    listAll: () => request('/users'),
+    search: (q: string) => request(`/users/search?q=${encodeURIComponent(q)}`),
   },
 };

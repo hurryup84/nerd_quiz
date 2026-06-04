@@ -15,6 +15,7 @@ import { HistoryPage } from './pages/HistoryPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { TeamsPage } from './pages/TeamsPage';
+import { AdminTeamsPage } from './pages/AdminTeamsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ function App() {
             <Route path="/admin/questions" element={<ProtectedRoute adminOnly><Layout><AdminQuestionsPage /></Layout></ProtectedRoute>} />
             <Route path="/admin/questions/add" element={<ProtectedRoute adminOnly><Layout><QuestionFormPage /></Layout></ProtectedRoute>} />
             <Route path="/admin/questions/:id/edit" element={<ProtectedRoute adminOnly><Layout><QuestionFormPage /></Layout></ProtectedRoute>} />
+            <Route path="/admin/teams" element={<ProtectedRoute adminOnly><Layout><AdminTeamsPage /></Layout></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

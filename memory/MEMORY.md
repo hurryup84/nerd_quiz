@@ -1,0 +1,1 @@
+- [Backend npm scripts](backend-npm-scripts.md) — Use ./setup.sh and ./start.sh instead of direct npm/npx
