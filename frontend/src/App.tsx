@@ -14,6 +14,8 @@ import { SubmitQuestionPage } from './pages/SubmitQuestionPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
+import { TeamsPage } from './pages/TeamsPage';
+import { AdminTeamsPage } from './pages/AdminTeamsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,11 +41,13 @@ function App() {
             <Route path="/quiz/:id" element={<ProtectedRoute><Layout><QuizActivePage /></Layout></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><Layout><HistoryPage /></Layout></ProtectedRoute>} />
             <Route path="/insights" element={<ProtectedRoute><Layout><InsightsPage /></Layout></ProtectedRoute>} />
+            <Route path="/teams" element={<ProtectedRoute><Layout><TeamsPage /></Layout></ProtectedRoute>} />
             <Route path="/settings/password" element={<ProtectedRoute><Layout><ChangePasswordPage /></Layout></ProtectedRoute>} />
             <Route path="/questions/new" element={<ProtectedRoute><Layout><SubmitQuestionPage /></Layout></ProtectedRoute>} />
             <Route path="/admin/questions" element={<ProtectedRoute adminOnly><Layout><AdminQuestionsPage /></Layout></ProtectedRoute>} />
             <Route path="/admin/questions/add" element={<ProtectedRoute adminOnly><Layout><QuestionFormPage /></Layout></ProtectedRoute>} />
             <Route path="/admin/questions/:id/edit" element={<ProtectedRoute adminOnly><Layout><QuestionFormPage /></Layout></ProtectedRoute>} />
+            <Route path="/admin/teams" element={<ProtectedRoute adminOnly><Layout><AdminTeamsPage /></Layout></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

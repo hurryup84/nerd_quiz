@@ -45,11 +45,20 @@ start() {
 # Function to stop services
 stop() {
     echo "--- Stopping Nerd Quiz Services ---"
-    
+
+    # Kill by port — most reliable way to stop the actual listening processes
+    echo "Killing process on port 3000 (backend)..."
+    lsof -ti:3000 | xargs kill 2>/dev/null
+    sleep 1
+
+    echo "Killing process on port 5173 (frontend)..."
+    lsof -ti:5173 | xargs kill 2>/dev/null
+    sleep 1
+
+    # Also kill by PID files if they exist
     if [ -f "$BACKEND_PID_FILE" ]; then
         PID=$(cat "$BACKEND_PID_FILE")
         echo "Stopping Backend (PID $PID)..."
-        # Kill the process and its children (Nest watch mode spawns children)
         pkill -P "$PID" 2>/dev/null
         kill "$PID" 2>/dev/null
         rm "$BACKEND_PID_FILE"
@@ -63,7 +72,7 @@ stop() {
         rm "$FRONTEND_PID_FILE"
     fi
 
-    # Fallback to pkill for common process names if PIDs missed anything
+    # Fallback: kill any remaining related processes
     pkill -f "node.*nest" 2>/dev/null
     pkill -f "vite" 2>/dev/null
 

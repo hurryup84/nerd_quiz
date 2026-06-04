@@ -51,4 +51,64 @@ export const api = {
   put: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  teams: {
+    create: (data: { name: string; description?: string }) =>
+      request('/teams', { method: 'POST', body: JSON.stringify(data) }),
+    getMyTeams: () => request('/teams/me'),
+    getFilterOptions: () => request('/teams/all'),
+    getMembers: (teamId: string) => request(`/teams/${teamId}/members`),
+    invite: (teamId: string, username: string) =>
+      request(`/teams/${teamId}/invites`, {
+        method: 'POST',
+        body: JSON.stringify({ username }),
+      }),
+    getMyInvites: () => request('/teams/invites/me'),
+    acceptInvite: (inviteId: number) =>
+      request(`/teams/invites/${inviteId}/accept`, { method: 'POST' }),
+    declineInvite: (inviteId: number) =>
+      request(`/teams/invites/${inviteId}/decline`, { method: 'POST' }),
+    revokeInvite: (inviteId: number) =>
+      request(`/teams/invites/${inviteId}`, { method: 'DELETE' }),
+    getPendingInvites: (teamId: string) =>
+      request(`/teams/invites/${teamId}/pending`),
+    leave: (teamId: string) =>
+      request(`/teams/${teamId}/leave`, { method: 'POST' }),
+    delete: (teamId: string) => request(`/teams/${teamId}`, { method: 'DELETE' }),
+    // Admin endpoints
+    getTeam: (teamId: string) => request(`/teams/${teamId}`),
+    addMember: (teamId: string, userId: number) =>
+      request(`/teams/${teamId}/members`, { method: 'POST', body: JSON.stringify({ userId }) }),
+    removeMember: (teamId: string, userId: number) =>
+      request(`/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
+    transferOwnership: (teamId: string, newOwnerId: number) =>
+      request(`/teams/${teamId}/transfer`, { method: 'POST', body: JSON.stringify({ newOwnerId }) }),
+    getPendingInvitesAdmin: (teamId: string) =>
+      request(`/teams/${teamId}/invites/pending`),
+    revokeInviteAdmin: (inviteId: number) =>
+      request(`/teams/invites/${inviteId}/admin`, { method: 'DELETE' }),
+    // Category exclusion endpoints
+    toggleExclusion: (teamId: string, categoryId: number, isExcluded: boolean) =>
+      request(`/teams/${teamId}/exclusion`, {
+        method: 'POST',
+        body: JSON.stringify({ categoryId, isExcluded }),
+      }) as Promise<{ categoryId: number; category: { id: number; name: string } }>,
+    getExcludedCategories: (teamId: string) =>
+      request(`/teams/${teamId}/exclusion`) as Promise<
+        Array<{ categoryId: number; category: { id: number; name: string } }>
+      >,
+    // Admin endpoints
+    toggleExclusionAdmin: (teamId: string, categoryId: number, isExcluded: boolean) =>
+      request(`/teams/${teamId}/exclusion/admin`, {
+        method: 'POST',
+        body: JSON.stringify({ categoryId, isExcluded }),
+      }) as Promise<{ categoryId: number; category: { id: number; name: string } }>,
+    getExcludedCategoriesAdmin: (teamId: string) =>
+      request(`/teams/${teamId}/exclusion/admin`) as Promise<
+        Array<{ categoryId: number; category: { id: number; name: string } }>
+      >,
+  },
+  users: {
+    listAll: () => request('/users'),
+    search: (q: string) => request(`/users/search?q=${encodeURIComponent(q)}`),
+  },
 };

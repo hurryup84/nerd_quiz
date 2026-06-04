@@ -12,6 +12,7 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  SetMetadata,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { readFileSync } from 'node:fs';
@@ -20,6 +21,7 @@ import { IsString } from 'class-validator';
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../admin/admin.guard';
 
 class CreateNamedMetaDto {
@@ -39,6 +41,13 @@ export class QuestionsController {
   @Get()
   findAll() {
     return this.questionsService.findAll();
+  }
+
+  @Get('count')
+  @Public()
+  async count() {
+    const total = await this.questionsService.count();
+    return { total };
   }
 
   @UseGuards(AdminGuard)

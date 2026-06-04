@@ -99,6 +99,10 @@ export class QuestionsService {
     });
   }
 
+  async count() {
+    return this.prisma.question.count();
+  }
+
   async findOne(id: number) {
     const q = await this.prisma.question.findUnique({
       where: { id },

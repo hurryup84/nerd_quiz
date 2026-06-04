@@ -8,14 +8,18 @@ datasource db {
 }
 
 model User {
-  id           Int                 @id @default(autoincrement())
-  username     String              @unique
-  passwordHash String
-  role         String              @default("USER")
-  createdAt    DateTime            @default(now())
-  quizRounds   QuizRound[]
-  answers      Answer[]
+  id            Int                 @id @default(autoincrement())
+  username      String              @unique
+  passwordHash  String
+  role          String              @default("USER")
+  createdAt     DateTime            @default(now())
+  quizRounds    QuizRound[]
+  answers       Answer[]
   finalizations RoundFinalization[]
+  teams         UserTeam[]
+  createdTeams  Team[]
+  sentInvites   TeamInvite[]        @relation("Inviter")
+  receivedInvites TeamInvite[]      @relation("Invitee")
 
   @@index([username])
 }
@@ -44,10 +48,11 @@ model Question {
 }
 
 model Category {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique
-  createdAt DateTime   @default(now())
-  questions Question[]
+  id                 Int                      @id @default(autoincrement())
+  name               String                   @unique
+  createdAt          DateTime                 @default(now())
+  questions          Question[]
+  excludedByTeams    TeamExcludedCategory[]
 
   @@index([name])
 }
@@ -67,6 +72,8 @@ model QuizRound {
   status               String              @default("ACTIVE")
   createdBy            User                @relation(fields: [createdById], references: [id])
   createdById          Int
+  teamId               String?
+  team                 Team?               @relation(fields: [teamId], references: [id])
   createdAt            DateTime            @default(now())
   finishedAt           DateTime?
   timeoutAt            DateTime?
@@ -75,6 +82,7 @@ model QuizRound {
   finalizations        RoundFinalization[]
 
   @@index([status])
+  @@index([status, teamId])
 }
 
 model RoundQuestion {
@@ -122,4 +130,53 @@ model RoundFinalization {
   createdAt   DateTime  @default(now())
 
   @@unique([quizRoundId, userId])
+}
+
+model Team {
+  id                     String                 @id @default(uuid())
+  name                   String
+  description            String?
+  creatorId              Int
+  creator                User                   @relation(fields: [creatorId], references: [id])
+  members                UserTeam[]
+  invites                TeamInvite[]
+  rounds                 QuizRound[]
+  excludedCategories     TeamExcludedCategory[]
+  createdAt              DateTime                @default(now())
+}
+
+model TeamExcludedCategory {
+  id        Int    @id @default(autoincrement())
+  team      Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId    String
+  category  Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId Int
+
+  @@unique([teamId, categoryId])
+}
+
+model UserTeam {
+  userId Int
+  teamId String
+  role   String
+
+  user User @relation(fields: [userId], references: [id])
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@unique([userId, teamId])
+}
+
+model TeamInvite {
+  id        Int      @id @default(autoincrement())
+  teamId    String
+  inviterId Int
+  inviteeId Int
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+
+  team    Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  inviter User @relation("Inviter", fields: [inviterId], references: [id])
+  invitee User @relation("Invitee", fields: [inviteeId], references: [id])
+
+  @@unique([teamId, inviteeId])
 }

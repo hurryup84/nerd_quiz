@@ -1,5 +1,11 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
+import {
+  TeamFilterSelect,
+  withTeamFilter,
+  type TeamFilterValue,
+} from '../components/TeamFilterSelect';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,7 +23,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
 interface UserStat {
@@ -35,15 +41,19 @@ interface ActivityStat {
 }
 
 export function InsightsPage() {
+  const [teamFilter, setTeamFilter] = useState<TeamFilterValue>('all');
+
   const { data: stats = [], isLoading: statsLoading } = useQuery<UserStat[]>({
-    queryKey: ['insights'],
-    queryFn: () => api.get<UserStat[]>('/quiz/insights'),
+    queryKey: ['insights', teamFilter],
+    queryFn: () =>
+      api.get<UserStat[]>(withTeamFilter('/quiz/insights', teamFilter)),
     staleTime: 1000 * 60 * 10,
   });
 
   const { data: activity = [], isLoading: activityLoading } = useQuery<ActivityStat[]>({
-    queryKey: ['activity'],
-    queryFn: () => api.get<ActivityStat[]>('/quiz/activity'),
+    queryKey: ['activity', teamFilter],
+    queryFn: () =>
+      api.get<ActivityStat[]>(withTeamFilter('/quiz/activity', teamFilter)),
     staleTime: 1000 * 60 * 10,
   });
 
@@ -70,8 +80,16 @@ export function InsightsPage() {
   const chartOptions = {
     responsive: true,
     plugins: {
-      legend: { position: 'top' as const, labels: { color: '#00ff41', font: { family: 'monospace' } } },
-      title: { display: true, text: 'Activity (Last 30 Days)', color: '#00ff41', font: { family: 'monospace', size: 16 } },
+      legend: {
+        position: 'top' as const,
+        labels: { color: '#00ff41', font: { family: 'monospace' } },
+      },
+      title: {
+        display: true,
+        text: 'Activity (Last 30 Days)',
+        color: '#00ff41',
+        font: { family: 'monospace', size: 16 },
+      },
     },
     scales: {
       y: {
@@ -89,15 +107,18 @@ export function InsightsPage() {
     <div className="page">
       <div className="card">
         <h2>Insights</h2>
+        <TeamFilterSelect value={teamFilter} onChange={setTeamFilter} />
 
         {mostActive && (
           <div className="insights-highlights">
             <div className="highlight-card">
-              🏆 Most Active: <strong>{mostActive.username}</strong> ({mostActive.played} rounds)
+              🏆 Most Active: <strong>{mostActive.username}</strong> ({mostActive.played}{' '}
+              answers)
             </div>
             {highestAccuracy && (
               <div className="highlight-card">
-                🎯 Highest Accuracy: <strong>{highestAccuracy.username}</strong> ({highestAccuracy.accuracy}%)
+                🎯 Highest Accuracy: <strong>{highestAccuracy.username}</strong> (
+                {highestAccuracy.accuracy}%)
               </div>
             )}
           </div>

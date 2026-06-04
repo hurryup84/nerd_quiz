@@ -3,47 +3,132 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateRoundDto } from './dto/create-round.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
+
+type AuthUser = { id: number; role: string };
+
+const roundDetailInclude = {
+  questions: {
+    include: {
+      question: {
+        include: { category: true, difficulty: true },
+      },
+    },
+    orderBy: { order: 'asc' as const },
+  },
+  answers: {
+    include: { user: { select: { id: true, username: true } } },
+  },
+  finalizations: {
+    include: { user: { select: { id: true, username: true } } },
+  },
+  createdBy: { select: { id: true, username: true } },
+  team: { select: { id: true, name: true } },
+};
 
 @Injectable()
 export class QuizService {
   constructor(private prisma: PrismaService) {}
 
-  async getActiveRound() {
+  private isAdmin(user: AuthUser): boolean {
+    return user.role === 'ADMIN';
+  }
+
+  private async getMyTeamIds(userId: number): Promise<string[]> {
+    const membership = await this.prisma.userTeam.findMany({
+      where: { userId },
+      select: { teamId: true },
+    });
+    return membership.map((m) => m.teamId);
+  }
+
+  private async assertTeamMember(userId: number, teamId: string) {
+    const membership = await this.prisma.userTeam.findUnique({
+      where: { userId_teamId: { userId, teamId } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('You are not a member of this team');
+    }
+  }
+
+  private async assertCanParticipate(
+    round: { teamId: string | null },
+    userId: number,
+  ) {
+    if (round.teamId === null) return;
+    await this.assertTeamMember(userId, round.teamId);
+  }
+
+  private async assertCanViewRound(
+    round: { teamId: string | null },
+    user: AuthUser,
+  ) {
+    if (round.teamId === null) return;
+    if (this.isAdmin(user)) return;
+    await this.assertTeamMember(user.id, round.teamId);
+  }
+
+  private async getActiveForScope(teamId: string | null) {
     return this.prisma.quizRound.findFirst({
-      where: { status: 'ACTIVE' },
-      include: {
-        questions: {
-          include: {
-            question: {
-              include: { category: true, difficulty: true },
-            },
-          },
-          orderBy: { order: 'asc' },
-        },
-        answers: {
-          include: { user: { select: { id: true, username: true } } },
-        },
-        finalizations: {
-          include: { user: { select: { id: true, username: true } } },
-        },
-        createdBy: { select: { id: true, username: true } },
+      where: { status: 'ACTIVE', teamId },
+    });
+  }
+
+  async getActiveRoundsForUser(userId: number) {
+    const teamIds = await this.getMyTeamIds(userId);
+    return this.prisma.quizRound.findMany({
+      where: {
+        status: 'ACTIVE',
+        OR: [{ teamId: null }, { teamId: { in: teamIds } }],
       },
+      include: roundDetailInclude,
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async createRound(userId: number, dto: CreateRoundDto) {
-    const active = await this.getActiveRound();
-    if (active) throw new ConflictException('A quiz is currently in progress');
+    const teamId = dto.teamId ?? null;
+
+    if (teamId) {
+      await this.assertTeamMember(userId, teamId);
+    }
+
+    const active = await this.getActiveForScope(teamId);
+    if (active) {
+      const scope = teamId ? 'this team' : 'global';
+      throw new ConflictException(
+        `A quiz is already in progress for ${scope}`,
+      );
+    }
+
+    // Build filter to exclude questions from excluded categories (only for team rounds)
+    const excludedCategoryIds = teamId
+      ? (
+          await this.prisma.teamExcludedCategory.findMany({
+            where: { teamId },
+            select: { categoryId: true },
+          })
+        ).map((e) => e.categoryId)
+      : [];
 
     const allQuestions = await this.prisma.question.findMany({
+      where:
+        excludedCategoryIds.length > 0
+          ? { categoryId: { notIn: excludedCategoryIds } }
+          : undefined,
       select: { id: true },
     });
     if (allQuestions.length === 0) {
-      throw new BadRequestException('No questions available to start a round');
+      throw new BadRequestException(
+        teamId
+          ? 'No questions available to start a round (all categories may be excluded)'
+          : 'No questions available to start a round',
+      );
     }
 
     const requestedQuestionCount = dto.questionCount ?? 4;
@@ -65,6 +150,7 @@ export class QuizService {
       data: {
         requiredParticipants: dto.requiredParticipants,
         createdById: userId,
+        teamId,
         timeoutAt,
         questions: {
           create: selectedIds.map((id, index) => ({
@@ -81,6 +167,7 @@ export class QuizService {
             },
           },
         },
+        team: { select: { id: true, name: true } },
       },
     });
   }
@@ -93,6 +180,8 @@ export class QuizService {
     if (!round) throw new NotFoundException('Round not found');
     if (round.status !== 'ACTIVE')
       throw new BadRequestException('Round is not active');
+
+    await this.assertCanParticipate(round, userId);
 
     const rq = round.questions.find((q) => q.questionId === dto.questionId);
     if (!rq) throw new NotFoundException('Question not in this round');
@@ -133,6 +222,8 @@ export class QuizService {
     if (round.status !== 'ACTIVE')
       throw new BadRequestException('Round is not active');
 
+    await this.assertCanParticipate(round, userId);
+
     const alreadyFinalized = await this.prisma.roundFinalization.findUnique({
       where: { quizRoundId_userId: { quizRoundId: roundId, userId } },
     });
@@ -164,7 +255,7 @@ export class QuizService {
     }
   }
 
-  async cancelRound(roundId: number) {
+  async cancelRound(roundId: number, user: AuthUser) {
     const round = await this.prisma.quizRound.findUnique({
       where: { id: roundId },
     });
@@ -172,40 +263,38 @@ export class QuizService {
     if (round.status !== 'ACTIVE')
       throw new BadRequestException('Round is not active');
 
+    if (
+      round.createdById !== user.id &&
+      !this.isAdmin(user)
+    ) {
+      throw new ForbiddenException(
+        'Only the round creator or an admin can cancel this round',
+      );
+    }
+
     return this.prisma.quizRound.update({
       where: { id: roundId },
       data: { status: 'CANCELLED' },
     });
   }
 
-  async getRound(id: number) {
+  async getRound(id: number, user: AuthUser) {
     const round = await this.prisma.quizRound.findUnique({
       where: { id },
-      include: {
-        questions: {
-          include: {
-            question: {
-              include: { category: true, difficulty: true },
-            },
-          },
-          orderBy: { order: 'asc' },
-        },
-        answers: {
-          include: { user: { select: { id: true, username: true } } },
-        },
-        finalizations: {
-          include: { user: { select: { id: true, username: true } } },
-        },
-        createdBy: { select: { id: true, username: true } },
-      },
+      include: roundDetailInclude,
     });
     if (!round) throw new NotFoundException('Round not found');
+    await this.assertCanViewRound(round, user);
     return round;
   }
 
-  async getLastFinishedRound() {
+  async getLastFinishedRound(userId: number) {
+    const teamIds = await this.getMyTeamIds(userId);
     return this.prisma.quizRound.findFirst({
-      where: { status: 'FINISHED' },
+      where: {
+        status: 'FINISHED',
+        OR: [{ teamId: null }, { teamId: { in: teamIds } }],
+      },
       orderBy: { finishedAt: 'desc' },
       include: {
         questions: {
@@ -219,15 +308,47 @@ export class QuizService {
         answers: {
           include: { user: { select: { id: true, username: true } } },
         },
+        team: { select: { id: true, name: true } },
       },
     });
   }
 
-  async getHistory(page: number, pageSize = 25) {
+  private async buildRoundFilter(
+    user: AuthUser,
+    teamFilter?: string,
+  ): Promise<Prisma.QuizRoundWhereInput> {
+    const base: Prisma.QuizRoundWhereInput = {
+      status: { in: ['FINISHED', 'CANCELLED'] },
+    };
+
+    if (!teamFilter || teamFilter === 'all') {
+      if (this.isAdmin(user)) {
+        return base;
+      }
+      const teamIds = await this.getMyTeamIds(user.id);
+      return {
+        ...base,
+        OR: [{ teamId: null }, { teamId: { in: teamIds } }],
+      };
+    }
+
+    if (teamFilter === 'global') {
+      return { ...base, teamId: null };
+    }
+
+    if (!this.isAdmin(user)) {
+      await this.assertTeamMember(user.id, teamFilter);
+    }
+
+    return { ...base, teamId: teamFilter };
+  }
+
+  async getHistory(user: AuthUser, page: number, teamFilter?: string, pageSize = 25) {
+    const where = await this.buildRoundFilter(user, teamFilter);
     const skip = (page - 1) * pageSize;
     const [rounds, total] = await Promise.all([
       this.prisma.quizRound.findMany({
-        where: { status: { in: ['FINISHED', 'CANCELLED'] } },
+        where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: pageSize,
@@ -235,20 +356,31 @@ export class QuizService {
           questions: {
             include: { question: { select: { questionText: true, questionId: true } } },
           },
+          team: { select: { id: true, name: true } },
           _count: { select: { finalizations: true } },
         },
       }),
-      this.prisma.quizRound.count({
-        where: { status: { in: ['FINISHED', 'CANCELLED'] } },
-      }),
+      this.prisma.quizRound.count({ where }),
     ]);
     return { rounds, total, page, pageSize };
   }
 
-  async getInsights() {
+  async getInsights(user: AuthUser, teamFilter?: string) {
+    const roundWhere = await this.buildRoundFilter(user, teamFilter);
+
     const users = await this.prisma.user.findMany({
+      where: {
+        answers: {
+          some: {
+            quizRound: roundWhere,
+          },
+        },
+      },
       include: {
         answers: {
+          where: {
+            quizRound: roundWhere,
+          },
           include: {
             roundQuestion: {
               include: { question: true },
@@ -258,14 +390,15 @@ export class QuizService {
       },
     });
 
-    const stats = users.map((user) => {
-      const played = user.answers.length;
-      const correct = user.answers.filter((a) => {
-        return a.roundQuestion.question.correctAnswer === a.selectedAnswer;
-      }).length;
+    const stats = users.map((u) => {
+      const played = u.answers.length;
+      const correct = u.answers.filter(
+        (a) =>
+          a.roundQuestion.question.correctAnswer === a.selectedAnswer,
+      ).length;
       return {
-        id: user.id,
-        username: user.username,
+        id: u.id,
+        username: u.username,
         played,
         correct,
         incorrect: played - correct,
@@ -274,16 +407,17 @@ export class QuizService {
     });
 
     stats.sort((a, b) => b.correct - a.correct);
-
     return stats;
   }
 
-  async getActivityStats() {
+  async getActivityStats(user: AuthUser, teamFilter?: string) {
+    const roundWhere = await this.buildRoundFilter(user, teamFilter);
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const rounds = await this.prisma.quizRound.findMany({
       where: {
+        ...roundWhere,
         status: 'FINISHED',
         finishedAt: { gte: thirtyDaysAgo },
       },
