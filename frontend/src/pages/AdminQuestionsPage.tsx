@@ -275,8 +275,6 @@ export function AdminQuestionsPage() {
                 <th>ID</th>
                 <th>Question</th>
                 <th>Category</th>
-                <th>Difficulty</th>
-                <th>Info</th>
                 <th>Answer</th>
                 <th>Actions</th>
               </tr>
@@ -289,8 +287,6 @@ export function AdminQuestionsPage() {
                   </td>
                   <td>{q.questionText}</td>
                   <td>{q.category?.name ?? '—'}</td>
-                  <td>{q.difficulty?.name ?? '—'}</td>
-                  <td>{q.info?.substring(0, 80) ?? '—'}</td>
                   <td>{q.correctAnswer}</td>
                   <td>
                     <Link
