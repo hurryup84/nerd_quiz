@@ -92,4 +92,20 @@ export class TeamsController {
   ) {
     return this.teamsService.deleteTeam(id, req.user.id);
   }
+
+  @Get('invites/:id/pending')
+  getPendingInvites(
+    @Param('id') teamId: string,
+    @Request() req: { user: { id: number } },
+  ) {
+    return this.teamsService.getPendingInvites(teamId, req.user.id);
+  }
+
+  @Delete('invites/:inviteId')
+  revokeInvite(
+    @Param('inviteId') inviteId: string,
+    @Request() req: { user: { id: number } },
+  ) {
+    return this.teamsService.revokeInvite(Number(inviteId), req.user.id);
+  }
 }

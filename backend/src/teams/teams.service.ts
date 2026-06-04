@@ -5,6 +5,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { Prisma, TeamInvite } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 
@@ -232,6 +233,42 @@ export class TeamsService {
     return this.prisma.team.findMany({
       select: { id: true, name: true },
       orderBy: { name: 'asc' },
+    });
+  }
+
+  async getPendingInvites(teamId: string, userId: number): Promise<TeamInvite[]> {
+    // Ensure the user is the owner of the team
+    await this.assertOwner(userId, teamId);
+
+    // Fetch pending invites for this team
+    return this.prisma.teamInvite.findMany({
+      where: { teamId, status: 'PENDING' },
+      include: {
+        team: { select: { id: true, name: true } },
+        inviter: { select: { id: true, username: true } },
+        invitee: { select: { id: true, username: true } },
+      },
+    });
+  }
+
+  async revokeInvite(inviteId: number, userId: number): Promise<TeamInvite> {
+    // Ensure the user is the owner of the team that sent the invite
+    const invite = await this.prisma.teamInvite.findUnique({
+      where: { id: inviteId },
+      include: { team: true },
+    });
+    if (!invite) {
+      throw new NotFoundException('Invite not found');
+    }
+    if (invite.status !== 'PENDING') {
+      throw new BadRequestException('Only pending invites can be revoked');
+    }
+    // Verify that the caller is the inviter (owner) of the team
+    await this.assertOwner(userId, invite.teamId);
+
+    // Delete the invite
+    return this.prisma.teamInvite.delete({
+      where: { id: inviteId },
     });
   }
 }

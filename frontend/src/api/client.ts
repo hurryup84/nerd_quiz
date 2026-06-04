@@ -67,6 +67,10 @@ export const api = {
       request(`/teams/invites/${inviteId}/accept`, { method: 'POST' }),
     declineInvite: (inviteId: number) =>
       request(`/teams/invites/${inviteId}/decline`, { method: 'POST' }),
+    revokeInvite: (inviteId: number) =>
+      request(`/teams/invites/${inviteId}`, { method: 'DELETE' }),
+    getPendingInvites: (teamId: string) =>
+      request(`/teams/invites/${teamId}/pending`),
     leave: (teamId: string) =>
       request(`/teams/${teamId}/leave`, { method: 'POST' }),
     delete: (teamId: string) => request(`/teams/${teamId}`, { method: 'DELETE' }),

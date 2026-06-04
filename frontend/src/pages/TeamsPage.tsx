@@ -25,6 +25,13 @@ interface TeamMember {
   user: { id: number; username: string };
 }
 
+interface PendingInvite {
+  id: number;
+  team: { id: string; name: string };
+  inviter: { id: number; username: string };
+  invitee: { id: number; username: string };
+}
+
 export function TeamsPage() {
   const queryClient = useQueryClient();
   const [teamName, setTeamName] = useState('');
@@ -42,6 +49,8 @@ export function TeamsPage() {
     queryFn: () => api.teams.getMyInvites() as Promise<TeamInvite[]>,
   });
 
+  const selectedMembership = myUserTeams.find((ut) => ut.team.id === selectedTeamId);
+
   const { data: teamDetails, isLoading: membersLoading } = useQuery<{
     members: TeamMember[];
   } | null>({
@@ -51,6 +60,15 @@ export function TeamsPage() {
         ? (api.teams.getMembers(selectedTeamId) as Promise<{ members: TeamMember[] }>)
         : Promise.resolve(null),
     enabled: !!selectedTeamId,
+  });
+
+  const { data: pendingTeamInvites = [] } = useQuery<PendingInvite[]>({
+    queryKey: ['teams', 'pendingInvites', selectedTeamId],
+    queryFn: () =>
+      selectedTeamId && selectedMembership?.role === 'OWNER'
+        ? (api.teams.getPendingInvites(selectedTeamId) as Promise<PendingInvite[]>)
+        : Promise.resolve([]),
+    enabled: !!selectedTeamId && selectedMembership?.role === 'OWNER',
   });
 
   const createMutation = useMutation({
@@ -69,6 +87,13 @@ export function TeamsPage() {
     onSuccess: () => {
       setInviteUsername('');
       setMessage('Invite sent.');
+      // Refetch pending invites for the selected team and global pending invites
+      void queryClient.refetchQueries({ queryKey: ['teams', 'invites'] });
+      if (selectedTeamId) {
+        void queryClient.refetchQueries({
+          queryKey: ['teams', 'pendingInvites', selectedTeamId],
+        });
+      }
     },
     onError: (err: Error) => setMessage(err.message),
   });
@@ -86,6 +111,15 @@ export function TeamsPage() {
     mutationFn: (inviteId: number) => api.teams.declineInvite(inviteId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['teams', 'invites'] });
+    },
+    onError: (err: Error) => setMessage(err.message),
+  });
+
+  const revokeInviteMutation = useMutation({
+    mutationFn: (inviteId: number) => api.teams.revokeInvite(inviteId),
+    onSuccess: () => {
+      setMessage('Invite revoked.');
+      void queryClient.invalidateQueries({ queryKey: ['teams', 'pendingInvites'] });
     },
     onError: (err: Error) => setMessage(err.message),
   });
@@ -122,8 +156,6 @@ export function TeamsPage() {
     inviteMutation.mutate({ teamId: selectedTeamId, username: inviteUsername.trim() });
   };
 
-  const selectedMembership = myUserTeams.find((ut) => ut.team.id === selectedTeamId);
-
   if (teamsLoading) return <div className="loading">Loading teams…</div>;
 
   return (
@@ -147,7 +179,7 @@ export function TeamsPage() {
                     Accept
                   </button>
                   <button
-                    className="btn btn-sm"
+                    className="btn-sm"
                     onClick={() => declineMutation.mutate(inv.id)}
                     disabled={declineMutation.isPending}
                   >
@@ -256,22 +288,55 @@ export function TeamsPage() {
               </ul>
 
               {selectedMembership.role === 'OWNER' && (
-                <form onSubmit={handleInvite} className="form" style={{ marginTop: '1rem' }}>
-                  <h3>Invite by username</h3>
-                  <div className="form-group">
-                    <label>Username</label>
-                    <input
-                      type="text"
-                      value={inviteUsername}
-                      onChange={(e) => setInviteUsername(e.target.value)}
-                      placeholder="Enter username"
-                      required
-                    />
+                <>
+                  <div style={{ marginTop: '1rem' }}>
+                    <h3>Pending Invites</h3>
+                    {pendingTeamInvites.length > 0 ? (
+                      <ul className="members-list">
+                        {pendingTeamInvites.map((inv) => (
+                          <li key={inv.id}>
+                            <strong>{inv.invitee.username}</strong>
+                            <span style={{ marginLeft: '0.5rem', color: '#666' }}>
+                              invited by {inv.inviter.username}
+                            </span>
+                            <div style={{ marginTop: '0.25rem' }}>
+                              <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => {
+                                  if (window.confirm(`Revoke invite to ${inv.invitee.username}?`)) {
+                                    revokeInviteMutation.mutate(inv.id);
+                                  }
+                                }}
+                                disabled={revokeInviteMutation.isPending}
+                              >
+                                {revokeInviteMutation.isPending ? 'Revoking…' : 'Revoke'}
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p style={{ color: '#666' }}>No pending invites.</p>
+                    )}
                   </div>
-                  <button type="submit" disabled={inviteMutation.isPending}>
-                    {inviteMutation.isPending ? 'Sending…' : 'Send Invite'}
-                  </button>
-                </form>
+
+                  <form onSubmit={handleInvite} className="form" style={{ marginTop: '1rem' }}>
+                    <h3>Invite by username</h3>
+                    <div className="form-group">
+                      <label>Username</label>
+                      <input
+                        type="text"
+                        value={inviteUsername}
+                        onChange={(e) => setInviteUsername(e.target.value)}
+                        placeholder="Enter username"
+                        required
+                      />
+                    </div>
+                    <button type="submit" disabled={inviteMutation.isPending}>
+                      {inviteMutation.isPending ? 'Sending…' : 'Send Invite'}
+                    </button>
+                  </form>
+                </>
               )}
             </>
           )}
