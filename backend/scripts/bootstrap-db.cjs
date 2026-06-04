@@ -19,6 +19,7 @@ const REQUIRED_TABLES = [
   'Team',
   'UserTeam',
   'TeamInvite',
+  'TeamExcludedCategory',
 ];
 
 const REQUIRED_QUESTION_COLUMNS = [
