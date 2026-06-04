@@ -79,6 +79,7 @@ export function InsightsPage() {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top' as const,
@@ -124,7 +125,7 @@ export function InsightsPage() {
           </div>
         )}
 
-        <div style={{ marginBottom: '2rem' }}>
+        <div style={{ marginBottom: '2rem', minHeight: '200px', position: 'relative' }}>
           <Bar data={chartData} options={chartOptions} />
         </div>
 

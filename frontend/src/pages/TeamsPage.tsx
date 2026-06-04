@@ -347,7 +347,7 @@ export function TeamsPage() {
                             (ec) => ec.categoryId === category.id,
                           );
                           return (
-                            <div key={category.id} className="category-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
+                            <div key={category.id} className="category-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
                               <span>{category.name}</span>
                               <button
                                 className={isExcluded ? 'btn btn-danger btn-sm' : 'btn-primary btn-sm'}
@@ -361,7 +361,7 @@ export function TeamsPage() {
                         })}
                       </div>
                     ) : (
-                      <p style={{ color: '#666' }}>No categories available.</p>
+                      <p className="muted">No categories available.</p>
                     )}
                   </div>
 
@@ -372,7 +372,7 @@ export function TeamsPage() {
                         {pendingTeamInvites.map((inv) => (
                           <li key={inv.id}>
                             <strong>{inv.invitee.username}</strong>
-                            <span style={{ marginLeft: '0.5rem', color: '#666' }}>
+                            <span className="muted" style={{ marginLeft: '0.5rem' }}>
                               invited by {inv.inviter.username}
                             </span>
                             <div style={{ marginTop: '0.25rem' }}>
@@ -392,7 +392,7 @@ export function TeamsPage() {
                         ))}
                       </ul>
                     ) : (
-                      <p style={{ color: '#666' }}>No pending invites.</p>
+                      <p className="muted">No pending invites.</p>
                     )}
                   </div>
 

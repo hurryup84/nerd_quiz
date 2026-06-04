@@ -269,7 +269,7 @@ export function AdminTeamsPage() {
                     (ec) => ec.categoryId === category.id,
                   );
                   return (
-                    <div key={category.id} className="category-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
+                    <div key={category.id} className="category-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
                       <span>{category.name}</span>
                       <button
                         className={isExcluded ? 'btn btn-danger btn-sm' : 'btn-primary btn-sm'}
