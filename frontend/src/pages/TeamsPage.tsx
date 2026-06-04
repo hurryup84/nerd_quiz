@@ -32,6 +32,20 @@ interface PendingInvite {
   invitee: { id: number; username: string };
 }
 
+interface Category {
+  id: number;
+  name: string;
+}
+
+interface QuestionsMeta {
+  categories: Category[];
+}
+
+interface ExcludedCategory {
+  categoryId: number;
+  category: Category;
+}
+
 export function TeamsPage() {
   const queryClient = useQueryClient();
   const [teamName, setTeamName] = useState('');
@@ -69,6 +83,31 @@ export function TeamsPage() {
         ? (api.teams.getPendingInvites(selectedTeamId) as Promise<PendingInvite[]>)
         : Promise.resolve([]),
     enabled: !!selectedTeamId && selectedMembership?.role === 'OWNER',
+  });
+
+  // Category exclusion queries
+  const { data: questionsMeta } = useQuery<QuestionsMeta>({
+    queryKey: ['questions', 'meta'],
+    queryFn: () => api.get<QuestionsMeta>('/questions/meta'),
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: excludedCategories = [] } = useQuery<ExcludedCategory[]>({
+    queryKey: ['teams', 'excludedCategories', selectedTeamId],
+    queryFn: () =>
+      selectedTeamId
+        ? api.teams.getExcludedCategories(selectedTeamId)
+        : Promise.resolve([]),
+    enabled: !!selectedTeamId && selectedMembership?.role === 'OWNER',
+  });
+
+  const toggleExclusionMutation = useMutation({
+    mutationFn: ({ teamId, categoryId, isExcluded }: { teamId: string; categoryId: number; isExcluded: boolean }) =>
+      api.teams.toggleExclusion(teamId, categoryId, isExcluded),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['teams', 'excludedCategories'] });
+    },
+    onError: (err: Error) => setMessage(err.message),
   });
 
   const createMutation = useMutation({
@@ -110,7 +149,7 @@ export function TeamsPage() {
   const declineMutation = useMutation({
     mutationFn: (inviteId: number) => api.teams.declineInvite(inviteId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['teams', 'invites'] });
+      void queryClient.refetchQueries({ queryKey: ['teams', 'invites'] });
     },
     onError: (err: Error) => setMessage(err.message),
   });
@@ -154,6 +193,15 @@ export function TeamsPage() {
     e.preventDefault();
     if (!selectedTeamId || !inviteUsername.trim()) return;
     inviteMutation.mutate({ teamId: selectedTeamId, username: inviteUsername.trim() });
+  };
+
+  const handleToggleExclusion = (categoryId: number, currentlyExcluded: boolean) => {
+    if (!selectedTeamId) return;
+    toggleExclusionMutation.mutate({
+      teamId: selectedTeamId,
+      categoryId,
+      isExcluded: !currentlyExcluded,
+    });
   };
 
   if (teamsLoading) return <div className="loading">Loading teams…</div>;
@@ -205,7 +253,7 @@ export function TeamsPage() {
               required
             />
           </div>
-          <button type="submit" disabled={createMutation.isPending}>
+          <button className="btn btn-text" type="submit" disabled={createMutation.isPending}>
             {createMutation.isPending ? 'Creating…' : 'Create Team'}
           </button>
         </form>
@@ -223,7 +271,7 @@ export function TeamsPage() {
                 </div>
                 <div className="team-actions">
                   <button
-                    className="btn-secondary"
+                    className="btn btn-secondary"
                     onClick={() => {
                       setSelectedTeamId(team.id);
                       setInviteUsername('');
@@ -233,7 +281,7 @@ export function TeamsPage() {
                   </button>
                   {role === 'OWNER' ? (
                     <button
-                      className="btn-danger"
+                      className="btn btn-danger"
                       onClick={() => {
                         if (window.confirm(`Delete team "${team.name}"?`)) {
                           deleteMutation.mutate(team.id);
@@ -269,7 +317,7 @@ export function TeamsPage() {
         <div className="card">
           <div className="card-header">
             <h2>{selectedMembership.team.name}</h2>
-            <button className="btn-text" onClick={() => setSelectedTeamId(null)}>
+            <button className="btn btn-text" onClick={() => setSelectedTeamId(null)}>
               Close
             </button>
           </div>
@@ -289,6 +337,34 @@ export function TeamsPage() {
 
               {selectedMembership.role === 'OWNER' && (
                 <>
+                  {/* Category Exclusions */}
+                  <div style={{ marginTop: '1rem' }}>
+                    <h3>Excluded Categories</h3>
+                    {questionsMeta?.categories && questionsMeta.categories.length > 0 ? (
+                      <div className="categories-list">
+                        {questionsMeta.categories.map((category) => {
+                          const isExcluded = excludedCategories.some(
+                            (ec) => ec.categoryId === category.id,
+                          );
+                          return (
+                            <div key={category.id} className="category-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
+                              <span>{category.name}</span>
+                              <button
+                                className={isExcluded ? 'btn btn-danger btn-sm' : 'btn-primary btn-sm'}
+                                onClick={() => handleToggleExclusion(category.id, isExcluded)}
+                                disabled={toggleExclusionMutation.isPending}
+                              >
+                                {isExcluded ? 'Excluded' : 'Included'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p style={{ color: '#666' }}>No categories available.</p>
+                    )}
+                  </div>
+
                   <div style={{ marginTop: '1rem' }}>
                     <h3>Pending Invites</h3>
                     {pendingTeamInvites.length > 0 ? (
@@ -332,7 +408,7 @@ export function TeamsPage() {
                         required
                       />
                     </div>
-                    <button type="submit" disabled={inviteMutation.isPending}>
+                    <button className="btn btn-text" type="submit" disabled={inviteMutation.isPending}>
                       {inviteMutation.isPending ? 'Sending…' : 'Send Invite'}
                     </button>
                   </form>

@@ -86,6 +86,26 @@ export const api = {
       request(`/teams/${teamId}/invites/pending`),
     revokeInviteAdmin: (inviteId: number) =>
       request(`/teams/invites/${inviteId}/admin`, { method: 'DELETE' }),
+    // Category exclusion endpoints
+    toggleExclusion: (teamId: string, categoryId: number, isExcluded: boolean) =>
+      request(`/teams/${teamId}/exclusion`, {
+        method: 'POST',
+        body: JSON.stringify({ categoryId, isExcluded }),
+      }) as Promise<{ categoryId: number; category: { id: number; name: string } }>,
+    getExcludedCategories: (teamId: string) =>
+      request(`/teams/${teamId}/exclusion`) as Promise<
+        Array<{ categoryId: number; category: { id: number; name: string } }>
+      >,
+    // Admin endpoints
+    toggleExclusionAdmin: (teamId: string, categoryId: number, isExcluded: boolean) =>
+      request(`/teams/${teamId}/exclusion/admin`, {
+        method: 'POST',
+        body: JSON.stringify({ categoryId, isExcluded }),
+      }) as Promise<{ categoryId: number; category: { id: number; name: string } }>,
+    getExcludedCategoriesAdmin: (teamId: string) =>
+      request(`/teams/${teamId}/exclusion/admin`) as Promise<
+        Array<{ categoryId: number; category: { id: number; name: string } }>
+      >,
   },
   users: {
     listAll: () => request('/users'),

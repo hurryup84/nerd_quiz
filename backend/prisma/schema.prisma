@@ -48,10 +48,11 @@ model Question {
 }
 
 model Category {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique
-  createdAt DateTime   @default(now())
-  questions Question[]
+  id                 Int                      @id @default(autoincrement())
+  name               String                   @unique
+  createdAt          DateTime                 @default(now())
+  questions          Question[]
+  excludedByTeams    TeamExcludedCategory[]
 
   @@index([name])
 }
@@ -132,15 +133,26 @@ model RoundFinalization {
 }
 
 model Team {
-  id          String       @id @default(uuid())
-  name        String
-  description String?
-  creatorId   Int
-  creator     User         @relation(fields: [creatorId], references: [id])
-  members     UserTeam[]
-  invites     TeamInvite[]
-  rounds      QuizRound[]
-  createdAt   DateTime     @default(now())
+  id                     String                 @id @default(uuid())
+  name                   String
+  description            String?
+  creatorId              Int
+  creator                User                   @relation(fields: [creatorId], references: [id])
+  members                UserTeam[]
+  invites                TeamInvite[]
+  rounds                 QuizRound[]
+  excludedCategories     TeamExcludedCategory[]
+  createdAt              DateTime                @default(now())
+}
+
+model TeamExcludedCategory {
+  id        Int    @id @default(autoincrement())
+  team      Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId    String
+  category  Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId Int
+
+  @@unique([teamId, categoryId])
 }
 
 model UserTeam {

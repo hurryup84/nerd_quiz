@@ -106,11 +106,29 @@ export class QuizService {
       );
     }
 
+    // Build filter to exclude questions from excluded categories (only for team rounds)
+    const excludedCategoryIds = teamId
+      ? (
+          await this.prisma.teamExcludedCategory.findMany({
+            where: { teamId },
+            select: { categoryId: true },
+          })
+        ).map((e) => e.categoryId)
+      : [];
+
     const allQuestions = await this.prisma.question.findMany({
+      where:
+        excludedCategoryIds.length > 0
+          ? { categoryId: { notIn: excludedCategoryIds } }
+          : undefined,
       select: { id: true },
     });
     if (allQuestions.length === 0) {
-      throw new BadRequestException('No questions available to start a round');
+      throw new BadRequestException(
+        teamId
+          ? 'No questions available to start a round (all categories may be excluded)'
+          : 'No questions available to start a round',
+      );
     }
 
     const requestedQuestionCount = dto.questionCount ?? 4;

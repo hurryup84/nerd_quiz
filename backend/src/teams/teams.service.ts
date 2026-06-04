@@ -8,6 +8,7 @@ import {
 import { TeamInvite } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTeamDto } from './dto/create-team.dto';
+import { ToggleExcludedCategoryDto } from './dto/toggle-excluded-category.dto';
 
 @Injectable()
 export class TeamsService {
@@ -454,6 +455,101 @@ export class TeamsService {
 
     return this.prisma.teamInvite.delete({
       where: { id: inviteId },
+    });
+  }
+
+  async toggleTeamExclusion(
+    teamId: string,
+    userId: number,
+    dto: ToggleExcludedCategoryDto,
+  ) {
+    // Only owner can toggle exclusions
+    await this.assertOwner(userId, teamId);
+
+    const { categoryId, isExcluded } = dto;
+
+    if (isExcluded) {
+      // Verify category exists
+      const category = await this.prisma.category.findUnique({
+        where: { id: categoryId },
+      });
+      if (!category) {
+        throw new NotFoundException('Category not found');
+      }
+      // Add exclusion
+      return this.prisma.teamExcludedCategory.upsert({
+        where: { teamId_categoryId: { teamId, categoryId } },
+        create: { teamId, categoryId },
+        update: {},
+      });
+    } else {
+      // Remove exclusion - check if it exists first
+      const existing = await this.prisma.teamExcludedCategory.findUnique({
+        where: { teamId_categoryId: { teamId, categoryId } },
+      });
+      if (!existing) {
+        throw new NotFoundException('Category is not excluded for this team');
+      }
+      return this.prisma.teamExcludedCategory.delete({
+        where: { teamId_categoryId: { teamId, categoryId } },
+      });
+    }
+  }
+
+  async getExcludedCategories(teamId: string, userId: number) {
+    await this.assertMember(userId, teamId);
+
+    return this.prisma.teamExcludedCategory.findMany({
+      where: { teamId },
+      include: { category: true },
+    });
+  }
+
+  async toggleTeamExclusionAdmin(teamId: string, dto: ToggleExcludedCategoryDto) {
+    // Admin can toggle exclusions without ownership check
+    // Check team exists
+    const team = await this.prisma.team.findUnique({ where: { id: teamId } });
+    if (!team) throw new NotFoundException('Team not found');
+
+    const { categoryId, isExcluded } = dto;
+
+    if (isExcluded) {
+      // Verify category exists
+      const category = await this.prisma.category.findUnique({
+        where: { id: categoryId },
+      });
+      if (!category) {
+        throw new NotFoundException('Category not found');
+      }
+      // Add exclusion
+      return this.prisma.teamExcludedCategory.upsert({
+        where: { teamId_categoryId: { teamId, categoryId } },
+        create: { teamId, categoryId },
+        update: {},
+      });
+    } else {
+      // Remove exclusion - check if it exists first
+      const existing = await this.prisma.teamExcludedCategory.findUnique({
+        where: { teamId_categoryId: { teamId, categoryId } },
+      });
+      if (!existing) {
+        throw new NotFoundException('Category is not excluded for this team');
+      }
+      return this.prisma.teamExcludedCategory.delete({
+        where: { teamId_categoryId: { teamId, categoryId } },
+      });
+    }
+  }
+
+  async getExcludedCategoriesAdmin(teamId: string) {
+    // Admin can view exclusions without membership check
+    // Check team exists
+    const team = await this.prisma.team.findUnique({ where: { id: teamId } });
+    if (!team) throw new NotFoundException('Team not found');
+
+    return this.prisma.teamExcludedCategory.findMany({
+      where: { teamId },
+      include: { category: true },
     });
   }
 }

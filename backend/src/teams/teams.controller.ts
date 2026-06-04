@@ -15,6 +15,7 @@ import { AddMemberDto } from './dto/add-member.dto';
 import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../admin/admin.guard';
+import { ToggleExcludedCategoryDto } from './dto/toggle-excluded-category.dto';
 
 @Controller('teams')
 @UseGuards(JwtAuthGuard)
@@ -160,5 +161,37 @@ export class TeamsController {
   @UseGuards(AdminGuard)
   revokeInviteAdmin(@Param('inviteId') inviteId: string) {
     return this.teamsService.revokeInviteAdmin(Number(inviteId));
+  }
+
+  @Post(':id/exclusion')
+  toggleTeamExclusion(
+    @Param('id') teamId: string,
+    @Request() req: { user: { id: number } },
+    @Body() dto: ToggleExcludedCategoryDto,
+  ) {
+    return this.teamsService.toggleTeamExclusion(teamId, req.user.id, dto);
+  }
+
+  @Get(':id/exclusion')
+  getExcludedCategories(
+    @Param('id') teamId: string,
+    @Request() req: { user: { id: number } },
+  ) {
+    return this.teamsService.getExcludedCategories(teamId, req.user.id);
+  }
+
+  @Post(':id/exclusion/admin')
+  @UseGuards(AdminGuard)
+  toggleTeamExclusionAdmin(
+    @Param('id') teamId: string,
+    @Body() dto: ToggleExcludedCategoryDto,
+  ) {
+    return this.teamsService.toggleTeamExclusionAdmin(teamId, dto);
+  }
+
+  @Get(':id/exclusion/admin')
+  @UseGuards(AdminGuard)
+  getExcludedCategoriesAdmin(@Param('id') teamId: string) {
+    return this.teamsService.getExcludedCategoriesAdmin(teamId);
   }
 }

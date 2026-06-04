@@ -31,6 +31,20 @@ interface PendingInvite {
   invitee: { id: number; username: string };
 }
 
+interface Category {
+  id: number;
+  name: string;
+}
+
+interface QuestionsMeta {
+  categories: Category[];
+}
+
+interface ExcludedCategory {
+  categoryId: number;
+  category: Category;
+}
+
 type ViewMode = 'list' | 'detail';
 
 export function AdminTeamsPage() {
@@ -63,6 +77,22 @@ export function AdminTeamsPage() {
     queryFn: () =>
       selectedTeamId
         ? (api.teams.getPendingInvitesAdmin(selectedTeamId) as Promise<PendingInvite[]>)
+        : Promise.resolve([]),
+    enabled: !!selectedTeamId && view === 'detail',
+  });
+
+  // Category exclusion queries
+  const { data: questionsMeta } = useQuery<QuestionsMeta>({
+    queryKey: ['questions', 'meta'],
+    queryFn: () => api.get<QuestionsMeta>('/questions/meta'),
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: excludedCategories = [] } = useQuery<ExcludedCategory[]>({
+    queryKey: ['teams', 'excludedCategoriesAdmin', selectedTeamId],
+    queryFn: () =>
+      selectedTeamId
+        ? api.teams.getExcludedCategoriesAdmin(selectedTeamId)
         : Promise.resolve([]),
     enabled: !!selectedTeamId && view === 'detail',
   });
@@ -121,6 +151,16 @@ export function AdminTeamsPage() {
     onError: (err: Error) => alert(err.message),
   });
 
+  // Toggle exclusion mutation (admin)
+  const toggleExclusionMutation = useMutation({
+    mutationFn: ({ teamId, categoryId, isExcluded }: { teamId: string; categoryId: number; isExcluded: boolean }) =>
+      api.teams.toggleExclusionAdmin(teamId, categoryId, isExcluded),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['teams', 'excludedCategoriesAdmin'] });
+    },
+    onError: (err: Error) => alert(err.message),
+  });
+
   const displayUsers = filteredUsers ?? users;
 
   const handleOpenDetail = (teamId: string) => {
@@ -139,6 +179,15 @@ export function AdminTeamsPage() {
     e.preventDefault();
     if (!selectedTeamId || !transferUserId) return;
     transferMutation.mutate({ teamId: selectedTeamId, newOwnerId: Number(transferUserId) });
+  };
+
+  const handleToggleExclusion = (categoryId: number, currentlyExcluded: boolean) => {
+    if (!selectedTeamId) return;
+    toggleExclusionMutation.mutate({
+      teamId: selectedTeamId,
+      categoryId,
+      isExcluded: !currentlyExcluded,
+    });
   };
 
   if (teamsLoading) return <div className="loading">Loading teams…</div>;
@@ -209,6 +258,34 @@ export function AdminTeamsPage() {
           ) : (
             <p className="muted">No members.</p>
           )}
+
+          {/* Category Exclusions */}
+          <div style={{ marginTop: '1rem' }}>
+            <h3>Excluded Categories</h3>
+            {questionsMeta?.categories && questionsMeta.categories.length > 0 ? (
+              <div className="categories-list">
+                {questionsMeta.categories.map((category) => {
+                  const isExcluded = excludedCategories.some(
+                    (ec) => ec.categoryId === category.id,
+                  );
+                  return (
+                    <div key={category.id} className="category-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
+                      <span>{category.name}</span>
+                      <button
+                        className={isExcluded ? 'btn btn-danger btn-sm' : 'btn-primary btn-sm'}
+                        onClick={() => handleToggleExclusion(category.id, isExcluded)}
+                        disabled={toggleExclusionMutation.isPending}
+                      >
+                        {isExcluded ? 'Excluded' : 'Included'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="muted">No categories available.</p>
+            )}
+          </div>
 
           {/* Pending invites */}
           <div style={{ marginTop: '1rem' }}>
