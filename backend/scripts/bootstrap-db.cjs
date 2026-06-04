@@ -168,7 +168,7 @@ async function main() {
   }
 
   console.log('Running seed...');
-  run('npm run seed', {
+  run('NODE_OPTIONS=--max-old-space-size=512 npm run seed:direct', {
     ...process.env,
     DATABASE_URL: targetUrl,
     ...(targetUrl.startsWith('libsql://')
