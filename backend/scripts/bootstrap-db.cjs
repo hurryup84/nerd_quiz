@@ -82,7 +82,28 @@ async function bootstrapLibsqlSchema(url, authToken) {
     "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
   );
 
-  if (existingTables.rows.length > 0) {
+  // Check if missing only the TeamExcludedCategory table (incremental update)
+  const existingTableNames = new Set(
+    existingTables.rows.map((row) => String(row.name)),
+  );
+  const missingTeamExcludedCategory = !existingTableNames.has('TeamExcludedCategory');
+
+  if (missingTeamExcludedCategory && existingTableNames.size > 0) {
+    // Apply incremental migration for the new table
+    const sql = `
+      CREATE TABLE IF NOT EXISTS "TeamExcludedCategory" (
+        "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        "teamId" TEXT NOT NULL,
+        "categoryId" INTEGER NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS "TeamExcludedCategory_teamId_categoryId_key"
+        ON "TeamExcludedCategory"("teamId", "categoryId");
+    `;
+    await client.execute(sql);
+    return;
+  }
+
+  if (existingTableNames.size > 0) {
     throw new Error(
       'Incompatible existing libSQL schema detected. Please recreate the database, then redeploy.',
     );
