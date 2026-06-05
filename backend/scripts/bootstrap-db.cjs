@@ -34,6 +34,7 @@ const REQUIRED_QUESTION_COLUMNS = [
   'answerC',
   'answerD',
   'correctAnswer',
+  'playCount',
   'createdAt',
   'updatedAt',
 ];

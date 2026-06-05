@@ -36,6 +36,7 @@ model Question {
   answerC       String
   answerD       String
   correctAnswer String
+  playCount     Int             @default(0)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   category      Category?       @relation(fields: [categoryId], references: [id])
@@ -45,6 +46,7 @@ model Question {
   @@index([questionId])
   @@index([categoryId])
   @@index([difficultyId])
+  @@index([playCount])
 }
 
 model Category {

@@ -121,7 +121,7 @@ export class QuizService {
         excludedCategoryIds.length > 0
           ? { categoryId: { notIn: excludedCategoryIds } }
           : undefined,
-      select: { id: true },
+      select: { id: true, playCount: true },
     });
     if (allQuestions.length === 0) {
       throw new BadRequestException(
@@ -134,41 +134,79 @@ export class QuizService {
     const requestedQuestionCount = dto.questionCount ?? 4;
     const questionCount = Math.min(requestedQuestionCount, allQuestions.length);
 
-    const shuffled = [...allQuestions];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    // Weighted random selection: less-played questions have higher probability
+    // Weight = 1 / (playCount + 1), so never-played questions get weight 1, once-played get 1/2, etc.
+    const weighted = allQuestions.map((q) => ({
+      question: q,
+      weight: 1 / (q.playCount + 1),
+    }));
+
+    // Select questions using weighted random selection (without replacement)
+    const selectedQuestions: { id: number; playCount: number }[] = [];
+    const remaining = [...weighted];
+    for (let i = 0; i < questionCount && remaining.length > 0; i++) {
+      // Calculate total weight of remaining questions
+      const totalWeight = remaining.reduce((sum, w) => sum + w.weight, 0);
+      // Pick a random point on the weight spectrum
+      let random = Math.random() * totalWeight;
+      // Find which question corresponds to that point
+      let selected = remaining[0];
+      for (const item of remaining) {
+        random -= item.weight;
+        if (random <= 0) {
+          selected = item;
+          break;
+        }
+      }
+      selectedQuestions.push({
+        id: selected.question.id,
+        playCount: selected.question.playCount,
+      });
+      // Remove selected item (no replacement)
+      const idx = remaining.findIndex((r) => r.question.id === selected.question.id);
+      remaining.splice(idx, 1);
     }
-    const selectedIds = shuffled.slice(0, questionCount).map((q) => q.id);
+    const selectedIds = selectedQuestions.map((q) => q.id);
 
     let timeoutAt: Date | undefined;
     if (dto.timeoutMinutes) {
       timeoutAt = new Date(Date.now() + dto.timeoutMinutes * 60 * 1000);
     }
 
-    return this.prisma.quizRound.create({
-      data: {
-        requiredParticipants: dto.requiredParticipants,
-        createdById: userId,
-        teamId,
-        timeoutAt,
-        questions: {
-          create: selectedIds.map((id, index) => ({
-            questionId: id,
-            order: index + 1,
-          })),
-        },
-      },
-      include: {
-        questions: {
-          include: {
-            question: {
-              include: { category: true, difficulty: true },
-            },
+    // Use transaction to create round and update play counts atomically
+    return this.prisma.$transaction(async (tx) => {
+      const round = await tx.quizRound.create({
+        data: {
+          requiredParticipants: dto.requiredParticipants,
+          createdById: userId,
+          teamId,
+          timeoutAt,
+          questions: {
+            create: selectedIds.map((id, index) => ({
+              questionId: id,
+              order: index + 1,
+            })),
           },
         },
-        team: { select: { id: true, name: true } },
-      },
+        include: {
+          questions: {
+            include: {
+              question: {
+                include: { category: true, difficulty: true },
+              },
+            },
+          },
+          team: { select: { id: true, name: true } },
+        },
+      });
+
+      // Increment playCount for selected questions
+      await tx.question.updateMany({
+        where: { id: { in: selectedIds } },
+        data: { playCount: { increment: 1 } },
+      });
+
+      return round;
     });
   }
 
