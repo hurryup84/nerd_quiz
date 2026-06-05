@@ -337,33 +337,7 @@ export function TeamsPage() {
 
               {selectedMembership.role === 'OWNER' && (
                 <>
-                  {/* Category Exclusions */}
-                  <div style={{ marginTop: '1rem' }}>
-                    <h3>Excluded Categories</h3>
-                    {questionsMeta?.categories && questionsMeta.categories.length > 0 ? (
-                      <div className="categories-list">
-                        {questionsMeta.categories.map((category) => {
-                          const isExcluded = excludedCategories.some(
-                            (ec) => ec.categoryId === category.id,
-                          );
-                          return (
-                            <div key={category.id} className="category-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                              <span>{category.name}</span>
-                              <button
-                                className={isExcluded ? 'btn btn-danger btn-sm' : 'btn-primary btn-sm'}
-                                onClick={() => handleToggleExclusion(category.id, isExcluded)}
-                                disabled={toggleExclusionMutation.isPending}
-                              >
-                                {isExcluded ? 'Excluded' : 'Included'}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="muted">No categories available.</p>
-                    )}
-                  </div>
+
 
                   <div style={{ marginTop: '1rem' }}>
                     <h3>Pending Invites</h3>
@@ -412,6 +386,33 @@ export function TeamsPage() {
                       {inviteMutation.isPending ? 'Sending…' : 'Send Invite'}
                     </button>
                   </form>
+                  {/* Category Exclusions */}
+                  <div style={{ marginTop: '1rem' }}>
+                    <h3>Excluded Categories</h3>
+                    {questionsMeta?.categories && questionsMeta.categories.length > 0 ? (
+                      <div className="categories-list">
+                        {questionsMeta.categories.map((category) => {
+                          const isExcluded = excludedCategories.some(
+                            (ec) => ec.categoryId === category.id,
+                          );
+                          return (
+                            <div key={category.id} className="category-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                              <span>{category.name}</span>
+                              <button
+                                className={isExcluded ? 'btn btn-danger btn-sm' : 'btn-primary btn-sm'}
+                                onClick={() => handleToggleExclusion(category.id, isExcluded)}
+                                disabled={toggleExclusionMutation.isPending}
+                              >
+                                {isExcluded ? 'Excluded' : 'Included'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="muted">No categories available.</p>
+                    )}
+                  </div>
                 </>
               )}
             </>
