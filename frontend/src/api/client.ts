@@ -1,5 +1,18 @@
 const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api';
 
+// Store token in localStorage as fallback for iOS cross-site cookie issues
+let fallbackToken: string | null = localStorage.getItem('auth-token');
+
+export function setFallbackToken(token: string) {
+  fallbackToken = token;
+  localStorage.setItem('auth-token', token);
+}
+
+export function clearFallbackToken() {
+  fallbackToken = null;
+  localStorage.removeItem('auth-token');
+}
+
 async function parseResponseBody<T>(res: Response): Promise<T> {
   if (res.status === 204) {
     return undefined as T;
@@ -31,9 +44,16 @@ async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  // Build headers - include Authorization header as fallback for iOS cross-site cookie issues
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(fallbackToken ? { Authorization: `Bearer ${fallbackToken}` } : {}),
+    ...(options.headers as Record<string, string> | undefined),
+  };
+
   const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers,
     ...options,
   });
   if (!res.ok) {

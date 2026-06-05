@@ -28,6 +28,7 @@ class ChangePasswordDto {
 
 function getCookieOptions() {
   const isProduction = process.env['NODE_ENV'] === 'production';
+  // Ensure secure is true in production for cross-site cookie compatibility
   const secure =
     (process.env['COOKIE_SECURE'] ?? (isProduction ? 'true' : 'false')) ===
     'true';
@@ -38,17 +39,18 @@ function getCookieOptions() {
       ? sameSiteRaw
       : 'lax';
 
-  // Note: we explicitly do NOT set `domain` here because:
-  // - In production, omitting domain scopes the cookie to the exact backend hostname
-  // - Setting domain would incorrectly point it to the frontend (cross-site)
-  // - The browser handles this correctly when both are on render.com domains
+  // For iOS WebKit cross-site cookie support:
+  // - Must have secure=true (requires HTTPS)
+  // - Must have sameSite='none'
+  // - Must have path='/' (done below)
+  // - iOS may still block based on ITP heuristics if cookie is classified as tracking
 
   return {
     httpOnly: true,
     secure,
     sameSite,
     maxAge: 15 * 60 * 1000,
-    path: '/', // Required for iOS Safari to send cookie on all paths
+    path: '/', // Required for iOS to send cookie on all API paths
   } as const;
 }
 
@@ -73,18 +75,21 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const token = await this.authService.login(req.user);
-    res.cookie('token', token, getCookieOptions());
+    const options = getCookieOptions();
+    res.cookie('token', token, options);
+    // Return token in body as fallback for iOS cross-site cookie issues
     return {
       id: req.user.id,
       username: req.user.username,
       role: req.user.role,
+      token, // Include token for iOS fallback (localStorage)
     };
   }
 
   @Post('logout')
   @HttpCode(200)
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('token', getCookieOptions());
+    res.clearCookie('token', { path: '/' });
     return { message: 'Logged out' };
   }
 
@@ -92,6 +97,15 @@ export class AuthController {
   @Get('me')
   me(@Request() req: { user: { id: number; username: string; role: string } }) {
     return req.user;
+  }
+
+  @Get('debug-cookie')
+  @HttpCode(200)
+  debugCookie(@Request() req: { cookies?: Record<string, string> }) {
+    return {
+      hasToken: !!req.cookies?.token,
+      cookieNames: req.cookies ? Object.keys(req.cookies) : [],
+    };
   }
 
   @UseGuards(JwtAuthGuard)

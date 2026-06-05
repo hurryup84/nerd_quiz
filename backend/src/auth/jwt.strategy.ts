@@ -9,7 +9,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => {
-          return req?.cookies?.token ?? null;
+          // Try cookie first, then Authorization header as fallback for iOS cross-site issues
+          return (
+            req?.cookies?.token ??
+            req?.cookies?.['__Host-token'] ??
+            ExtractJwt.fromAuthHeaderAsBearerToken()(req) ??
+            null
+          );
         },
       ]),
       ignoreExpiration: false,
@@ -17,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: number; username: string; role: string }) {
+  validate(payload: { sub: number; username: string; role: string }) {
     return { id: payload.sub, username: payload.username, role: payload.role };
   }
 }

@@ -6,7 +6,7 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import { api } from '../api/client';
+import { api, setFallbackToken, clearFallbackToken } from '../api/client';
 
 interface User {
   id: number;
@@ -39,8 +39,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(currentUser);
         }
       })
-      .catch(() => {
+      .catch((err) => {
         if (authCheckVersion.current === version) {
+          // Check if this is likely a cookie issue on iOS
+          if (err?.message === 'Network Error' || err instanceof TypeError) {
+            console.error(
+              'Auth check failed - this may be due to cross-site cookie restrictions on iOS. ' +
+                'Try refreshing or check browser settings.',
+            );
+          }
           setUser(null);
         }
       })
@@ -51,8 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     // Fetch and apply theme
-    api.get<{ theme: string; refreshInterval: number }>('/settings')
-      .then(data => {
+    api
+      .get<{ theme: string; refreshInterval: number }>('/settings')
+      .then((data) => {
         document.documentElement.setAttribute('data-theme', data.theme);
       })
       .catch(() => {
@@ -63,8 +71,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string) => {
     // Invalidate any in-flight /auth/me result from initial app bootstrap.
     authCheckVersion.current += 1;
-    const u = await api.post<User>('/auth/login', { username, password });
-    setUser(u);
+    const response = await api.post<{
+      id: number;
+      username: string;
+      role: string;
+      token: string;
+    }>('/auth/login', { username, password });
+    // Store token in localStorage as fallback for iOS cross-site cookie issues
+    setFallbackToken(response.token);
+    setUser(response);
     setLoading(false);
   };
 
@@ -74,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await api.post('/auth/logout');
+    clearFallbackToken();
     setUser(null);
   };
 
