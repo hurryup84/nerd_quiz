@@ -227,7 +227,7 @@ export function TeamsPage() {
                     Accept
                   </button>
                   <button
-                    className="btn-sm"
+                    className="btn btn-danger btn-sm"
                     onClick={() => declineMutation.mutate(inv.id)}
                     disabled={declineMutation.isPending}
                   >
@@ -293,7 +293,7 @@ export function TeamsPage() {
                     </button>
                   ) : (
                     <button
-                      className="btn-sm"
+                    className="btn btn-danger btn-sm"
                       onClick={() => {
                         if (window.confirm(`Leave team "${team.name}"?`)) {
                           leaveMutation.mutate(team.id);
