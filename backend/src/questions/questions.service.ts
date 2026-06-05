@@ -237,9 +237,8 @@ export class QuestionsService {
       const correctAnswer =
         valueByHeader('correctAnswer') || cols[cols.length - 1]?.trim() || '';
 
-      if (!csvQuestionId) {
-        throw new BadRequestException(`Import failed: row ${lineIndex + 1} is missing questionId`);
-      }
+      // Generate ID if empty (for CSV imports without questionId column)
+      const questionIdToUse = csvQuestionId || (await this.generateQuestionId());
       if (!questionText || !answerA || !answerB || !answerC || !answerD) {
         throw new BadRequestException(
           `Import failed: row ${lineIndex + 1} is missing question text or answers`,
@@ -280,7 +279,7 @@ export class QuestionsService {
 
       if (exists) {
         await this.prisma.question.update({
-          where: { questionId: csvQuestionId },
+          where: { questionId: questionIdToUse },
           data: {
             questionText,
             answerA,
@@ -296,7 +295,7 @@ export class QuestionsService {
       } else {
         await this.prisma.question.create({
           data: {
-            questionId: csvQuestionId,
+            questionId: questionIdToUse,
             questionText,
             answerA,
             answerB,
