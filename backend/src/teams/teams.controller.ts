@@ -23,10 +23,7 @@ export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
   @Post()
-  create(
-    @Request() req: { user: { id: number } },
-    @Body() dto: CreateTeamDto,
-  ) {
+  create(@Request() req: { user: { id: number } }, @Body() dto: CreateTeamDto) {
     return this.teamsService.createTeam(req.user.id, dto);
   }
 
@@ -82,10 +79,7 @@ export class TeamsController {
   }
 
   @Post(':id/leave')
-  leave(
-    @Param('id') id: string,
-    @Request() req: { user: { id: number } },
-  ) {
+  leave(@Param('id') id: string, @Request() req: { user: { id: number } }) {
     return this.teamsService.leaveTeam(id, req.user.id);
   }
 
@@ -126,19 +120,13 @@ export class TeamsController {
 
   @Post(':id/members')
   @UseGuards(AdminGuard)
-  addMember(
-    @Param('id') id: string,
-    @Body() dto: AddMemberDto,
-  ) {
+  addMember(@Param('id') id: string, @Body() dto: AddMemberDto) {
     return this.teamsService.addMember(id, dto.userId);
   }
 
   @Delete(':id/members/:userId')
   @UseGuards(AdminGuard)
-  removeMember(
-    @Param('id') id: string,
-    @Param('userId') userId: string,
-  ) {
+  removeMember(@Param('id') id: string, @Param('userId') userId: string) {
     return this.teamsService.removeMember(id, Number(userId));
   }
 

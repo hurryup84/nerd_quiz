@@ -92,7 +92,10 @@ export class QuestionsController {
   async exportCsv(@Res() res: Response) {
     const csv = await this.questionsService.exportCsv();
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="questions.csv"');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="questions.csv"',
+    );
     res.send(csv);
   }
 

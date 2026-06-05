@@ -101,9 +101,7 @@ export class QuizService {
     const active = await this.getActiveForScope(teamId);
     if (active) {
       const scope = teamId ? 'this team' : 'global';
-      throw new ConflictException(
-        `A quiz is already in progress for ${scope}`,
-      );
+      throw new ConflictException(`A quiz is already in progress for ${scope}`);
     }
 
     // Build filter to exclude questions from excluded categories (only for team rounds)
@@ -163,7 +161,9 @@ export class QuizService {
         playCount: selected.question.playCount,
       });
       // Remove selected item (no replacement)
-      const idx = remaining.findIndex((r) => r.question.id === selected.question.id);
+      const idx = remaining.findIndex(
+        (r) => r.question.id === selected.question.id,
+      );
       remaining.splice(idx, 1);
     }
     const selectedIds = selectedQuestions.map((q) => q.id);
@@ -265,7 +265,8 @@ export class QuizService {
     const alreadyFinalized = await this.prisma.roundFinalization.findUnique({
       where: { quizRoundId_userId: { quizRoundId: roundId, userId } },
     });
-    if (alreadyFinalized) throw new ConflictException('Already finalized this round');
+    if (alreadyFinalized)
+      throw new ConflictException('Already finalized this round');
 
     const answersCount = await this.prisma.answer.count({
       where: { quizRoundId: roundId, userId },
@@ -301,10 +302,7 @@ export class QuizService {
     if (round.status !== 'ACTIVE')
       throw new BadRequestException('Round is not active');
 
-    if (
-      round.createdById !== user.id &&
-      !this.isAdmin(user)
-    ) {
+    if (round.createdById !== user.id && !this.isAdmin(user)) {
       throw new ForbiddenException(
         'Only the round creator or an admin can cancel this round',
       );
@@ -381,7 +379,12 @@ export class QuizService {
     return { ...base, teamId: teamFilter };
   }
 
-  async getHistory(user: AuthUser, page: number, teamFilter?: string, pageSize = 25) {
+  async getHistory(
+    user: AuthUser,
+    page: number,
+    teamFilter?: string,
+    pageSize = 25,
+  ) {
     const where = await this.buildRoundFilter(user, teamFilter);
     const skip = (page - 1) * pageSize;
     const [rounds, total] = await Promise.all([
@@ -392,7 +395,9 @@ export class QuizService {
         take: pageSize,
         include: {
           questions: {
-            include: { question: { select: { questionText: true, questionId: true } } },
+            include: {
+              question: { select: { questionText: true, questionId: true } },
+            },
           },
           team: { select: { id: true, name: true } },
           _count: { select: { finalizations: true } },
@@ -431,8 +436,7 @@ export class QuizService {
     const stats = users.map((u) => {
       const played = u.answers.length;
       const correct = u.answers.filter(
-        (a) =>
-          a.roundQuestion.question.correctAnswer === a.selectedAnswer,
+        (a) => a.roundQuestion.question.correctAnswer === a.selectedAnswer,
       ).length;
       return {
         id: u.id,

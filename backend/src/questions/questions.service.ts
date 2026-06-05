@@ -25,18 +25,21 @@ export class QuestionsService {
     return trimmed ? trimmed : null;
   }
 
-  private async ensureMetaExists(
-    categoryId?: number,
-    difficultyId?: number,
-  ) {
+  private async ensureMetaExists(categoryId?: number, difficultyId?: number) {
     if (categoryId !== undefined) {
-      const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
-      if (!category) throw new BadRequestException('Selected category does not exist');
+      const category = await this.prisma.category.findUnique({
+        where: { id: categoryId },
+      });
+      if (!category)
+        throw new BadRequestException('Selected category does not exist');
     }
 
     if (difficultyId !== undefined) {
-      const difficulty = await this.prisma.difficulty.findUnique({ where: { id: difficultyId } });
-      if (!difficulty) throw new BadRequestException('Selected difficulty does not exist');
+      const difficulty = await this.prisma.difficulty.findUnique({
+        where: { id: difficultyId },
+      });
+      if (!difficulty)
+        throw new BadRequestException('Selected difficulty does not exist');
     }
   }
 
@@ -120,7 +123,10 @@ export class QuestionsService {
       where: { id },
       data: {
         ...dto,
-        info: dto.info !== undefined ? this.normalizeOptionalString(dto.info) : undefined,
+        info:
+          dto.info !== undefined
+            ? this.normalizeOptionalString(dto.info)
+            : undefined,
       },
       include: { category: true, difficulty: true },
     });
@@ -182,7 +188,9 @@ export class QuestionsService {
     }
 
     fields.push(current.trim());
-    return fields.map((field) => field.replace(/^"|"$/g, '').replace(/""/g, '"'));
+    return fields.map((field) =>
+      field.replace(/^"|"$/g, '').replace(/""/g, '"'),
+    );
   }
 
   async importCsv(csv: string): Promise<number> {
@@ -199,7 +207,9 @@ export class QuestionsService {
 
       const cols = this.parseCsvLine(line, delimiter);
       if (cols.length < 7) {
-        throw new BadRequestException(`Import failed: row ${lineIndex + 1} has too few columns`);
+        throw new BadRequestException(
+          `Import failed: row ${lineIndex + 1} has too few columns`,
+        );
       }
 
       const valueByHeader = (key: string): string => {
@@ -208,26 +218,37 @@ export class QuestionsService {
         return (cols[index] ?? '').trim();
       };
 
-      const csvQuestionId = valueByHeader('questionId') || cols[0]?.trim() || '';
-      const questionText = valueByHeader('questionText') || cols[1]?.trim() || '';
+      const csvQuestionId =
+        valueByHeader('questionId') || cols[0]?.trim() || '';
+      const questionText =
+        valueByHeader('questionText') || cols[1]?.trim() || '';
       const categoryName = valueByHeader('category');
       const difficultyName = valueByHeader('difficulty');
       const info = valueByHeader('info');
 
-      const answerA = valueByHeader('answerA') || cols[cols.length - 5]?.trim() || '';
-      const answerB = valueByHeader('answerB') || cols[cols.length - 4]?.trim() || '';
-      const answerC = valueByHeader('answerC') || cols[cols.length - 3]?.trim() || '';
-      const answerD = valueByHeader('answerD') || cols[cols.length - 2]?.trim() || '';
-      const correctAnswer = valueByHeader('correctAnswer') || cols[cols.length - 1]?.trim() || '';
+      const answerA =
+        valueByHeader('answerA') || cols[cols.length - 5]?.trim() || '';
+      const answerB =
+        valueByHeader('answerB') || cols[cols.length - 4]?.trim() || '';
+      const answerC =
+        valueByHeader('answerC') || cols[cols.length - 3]?.trim() || '';
+      const answerD =
+        valueByHeader('answerD') || cols[cols.length - 2]?.trim() || '';
+      const correctAnswer =
+        valueByHeader('correctAnswer') || cols[cols.length - 1]?.trim() || '';
 
       if (!csvQuestionId) {
         throw new BadRequestException(`Import failed: row ${lineIndex + 1} is missing questionId`);
       }
       if (!questionText || !answerA || !answerB || !answerC || !answerD) {
-        throw new BadRequestException(`Import failed: row ${lineIndex + 1} is missing question text or answers`);
+        throw new BadRequestException(
+          `Import failed: row ${lineIndex + 1} is missing question text or answers`,
+        );
       }
       if (!['A', 'B', 'C', 'D'].includes(correctAnswer)) {
-        throw new BadRequestException(`Import failed: row ${lineIndex + 1} has invalid correctAnswer`);
+        throw new BadRequestException(
+          `Import failed: row ${lineIndex + 1} has invalid correctAnswer`,
+        );
       }
 
       let categoryId: number | undefined;
@@ -253,7 +274,9 @@ export class QuestionsService {
         difficultyId = difficulty.id;
       }
 
-      const exists = await this.prisma.question.findUnique({ where: { questionId: csvQuestionId } });
+      const exists = await this.prisma.question.findUnique({
+        where: { questionId: questionIdToUse },
+      });
 
       if (exists) {
         await this.prisma.question.update({

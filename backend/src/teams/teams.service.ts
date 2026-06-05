@@ -389,7 +389,10 @@ export class TeamsService {
     });
   }
 
-  async getPendingInvites(teamId: string, userId: number): Promise<TeamInvite[]> {
+  async getPendingInvites(
+    teamId: string,
+    userId: number,
+  ): Promise<TeamInvite[]> {
     // Ensure the user is the owner of the team
     await this.assertOwner(userId, teamId);
 
@@ -505,7 +508,10 @@ export class TeamsService {
     });
   }
 
-  async toggleTeamExclusionAdmin(teamId: string, dto: ToggleExcludedCategoryDto) {
+  async toggleTeamExclusionAdmin(
+    teamId: string,
+    dto: ToggleExcludedCategoryDto,
+  ) {
     // Admin can toggle exclusions without ownership check
     // Check team exists
     const team = await this.prisma.team.findUnique({ where: { id: teamId } });

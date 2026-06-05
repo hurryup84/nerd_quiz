@@ -37,7 +37,9 @@ async function bootstrap() {
     }
 
     const [cs, web, math] = await Promise.all([
-      prisma.category.findUniqueOrThrow({ where: { name: 'Computer Science' } }),
+      prisma.category.findUniqueOrThrow({
+        where: { name: 'Computer Science' },
+      }),
       prisma.category.findUniqueOrThrow({ where: { name: 'Web Development' } }),
       prisma.category.findUniqueOrThrow({ where: { name: 'Mathematics' } }),
     ]);

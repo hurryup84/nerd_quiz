@@ -15,9 +15,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       : rawUrl;
     const authToken = process.env['TURSO_AUTH_TOKEN'];
 
-    const adapter = new PrismaLibSql(
-      authToken ? { url, authToken } : { url },
-    );
+    const adapter = new PrismaLibSql(authToken ? { url, authToken } : { url });
     super({ adapter });
   }
 
