@@ -172,6 +172,15 @@ h1, h2, h3, h4 {
   outline: none;
   width: 100%;
   font-family: inherit;
+  /* Prevent iOS zoom on focus - minimum 16px for inputs */
+  font-size: 16px;
+}
+
+/* Desktop can use smaller font sizes */
+@media (hover: hover) and (min-width: 768px) {
+  .form-group input, .form-group select, .form-group textarea {
+    font-size: 0.9rem;
+  }
 }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
   border-color: var(--primary);
