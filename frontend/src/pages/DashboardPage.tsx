@@ -137,6 +137,14 @@ export function DashboardPage() {
                   </div>
                 )}
 
+                <div className="participants-list" style={{ marginTop: '1rem' }}>
+                  {activeRound.finalizations?.map((f) => (
+                    <span key={f.user.id} className="badge badge-participant">
+                      {f.user.username} (Done)
+                    </span>
+                  ))}
+                </div>
+
                 <div style={{ marginTop: '1rem' }}>
                   <button
                     className="btn btn-sm"

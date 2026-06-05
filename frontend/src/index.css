@@ -238,7 +238,7 @@ h1, h2, h3, h4 {
 .progress-fill { height: 100%; background: var(--primary); border-radius: 0px; transition: width 0.4s; }
 
 .participants-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0; }
-.badge-participant { border: 1px solid var(--accent); padding: 0.2rem 0.6rem; font-size: 0.8rem; }
+.badge-participant { color: var(--accent); }
 
 
 .answer-choices { display: flex; flex-direction: column; gap: 0.6rem; margin: 1rem 0; }

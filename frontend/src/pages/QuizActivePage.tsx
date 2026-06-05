@@ -271,6 +271,14 @@ export function QuizActivePage() {
               }}
             />
           </div>
+
+          <div className="participants-list">
+            {round.finalizations?.map((f) => (
+              <span key={f.user.id} className="badge badge-participant">
+                {f.user.username} (Done)
+              </span>
+            ))}
+          </div>
         </div>
       );
     }
