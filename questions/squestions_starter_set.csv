@@ -1,5 +1,5 @@
-questionId;questionText;answerA;answerB;answerC;answerD;correctAnswer;category;difficulty;insight
-Q0001;Wann erschien der erster Superman Comic;1914;1938;1956;1972;B;TV Series;Easy;
+questionId;questionText;answerA;answerB;answerC;answerD;correctAnswer;category;difficulty;info
+Q0001;Wann erschien der erster Superman Comic;1914;1938;1956;1972;B;TV Series;Easy;Superman war der erste Superheld in der Comicgeschichte.
 Q0002;Wann gab es das erste tamagotchi;2005;1992;1996;2001;C;TV Series;Easy;
 Q0003;Who created the Linux kernel?;Bill Gates;Linus Torvalds;Richard Stallman;Dennis Ritchie;B;Technology;Easy;
 Q0004;Which port is used by HTTP by default?;21;25;80;443;C;Technology;Easy;
