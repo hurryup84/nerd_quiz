@@ -14,6 +14,12 @@ interface UserTeam {
   team: { id: string; name: string };
 }
 
+interface TeamMember {
+  userId: number;
+  role: string;
+  user: { id: number; username: string };
+}
+
 type ScopeValue = 'global' | string;
 
 export function StartQuizPage() {
@@ -37,6 +43,22 @@ export function StartQuizPage() {
     staleTime: 1000 * 60,
   });
 
+  // Get team members when a specific team is selected
+  const { data: teamMembers = [] } = useQuery<TeamMember[]>({
+    queryKey: ['teams', 'members', scope],
+    queryFn: () =>
+      scope !== 'global'
+        ? (api.teams.getMembers(scope) as Promise<{ members: TeamMember[] }>).then(
+            (r) => r.members,
+          )
+        : Promise.resolve([]),
+    enabled: scope !== 'global',
+    staleTime: 1000 * 60,
+  });
+
+  const maxQuestionCount = questions.length;
+
+  // Update participants count when team is selected
   useEffect(() => {
     if (myTeams.length === 1) {
       setScope(myTeams[0].team.id);
@@ -45,7 +67,14 @@ export function StartQuizPage() {
     }
   }, [myTeams]);
 
-  const maxQuestionCount = questions.length;
+  // Set default participants to team member count when team changes
+  useEffect(() => {
+    if (scope !== 'global' && teamMembers.length > 0) {
+      setParticipants(teamMembers.length);
+    } else if (scope === 'global') {
+      setParticipants(3);
+    }
+  }, [scope, teamMembers]);
 
   useEffect(() => {
     if (maxQuestionCount > 0 && questionCount > maxQuestionCount) {
