@@ -59,12 +59,18 @@ async function hasRequiredSchema(url, authToken) {
   const hasTables = REQUIRED_TABLES.every((table) => existing.has(table));
   if (!hasTables) return false;
 
+  // Check Question table columns - allow missing playCount column (incremental update)
   const questionColumns = await client.execute('PRAGMA table_info("Question")');
   const existingColumns = new Set(
     questionColumns.rows.map((row) => String(row.name)),
   );
 
-  return REQUIRED_QUESTION_COLUMNS.every((column) =>
+  // Required columns excluding playCount (which is added incrementally)
+  const requiredColumnsExcludingPlayCount = REQUIRED_QUESTION_COLUMNS.filter(
+    (col) => col !== 'playCount',
+  );
+
+  return requiredColumnsExcludingPlayCount.every((column) =>
     existingColumns.has(column),
   );
 }
@@ -83,24 +89,45 @@ async function bootstrapLibsqlSchema(url, authToken) {
     "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
   );
 
-  // Check if missing only the TeamExcludedCategory table (incremental update)
   const existingTableNames = new Set(
     existingTables.rows.map((row) => String(row.name)),
   );
+
+  // Check for missing TeamExcludedCategory table (incremental update)
   const missingTeamExcludedCategory = !existingTableNames.has('TeamExcludedCategory');
 
-  if (missingTeamExcludedCategory && existingTableNames.size > 0) {
-    // Apply incremental migration for the new table
-    const sql = `
-      CREATE TABLE IF NOT EXISTS "TeamExcludedCategory" (
-        "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        "teamId" TEXT NOT NULL,
-        "categoryId" INTEGER NOT NULL
-      );
-      CREATE UNIQUE INDEX IF NOT EXISTS "TeamExcludedCategory_teamId_categoryId_key"
-        ON "TeamExcludedCategory"("teamId", "categoryId");
-    `;
+  // Check for missing playCount column
+  const questionColumns = await client.execute('PRAGMA table_info("Question")');
+  const existingColumnNames = new Set(
+    questionColumns.rows.map((row) => String(row.name)),
+  );
+  const missingPlayCount = !existingColumnNames.has('playCount');
+
+  // Handle incremental updates
+  if (existingTableNames.size > 0 && (missingTeamExcludedCategory || missingPlayCount)) {
+    let sql = '';
+
+    if (missingTeamExcludedCategory) {
+      sql += `
+        CREATE TABLE IF NOT EXISTS "TeamExcludedCategory" (
+          "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          "teamId" TEXT NOT NULL,
+          "categoryId" INTEGER NOT NULL
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS "TeamExcludedCategory_teamId_categoryId_key"
+          ON "TeamExcludedCategory"("teamId", "categoryId");
+      `;
+    }
+
+    if (missingPlayCount) {
+      sql += `
+        ALTER TABLE "Question" ADD COLUMN "playCount" INTEGER NOT NULL DEFAULT 0;
+        CREATE INDEX IF NOT EXISTS "Question_playCount_idx" ON "Question"("playCount");
+      `;
+    }
+
     await client.execute(sql);
+    console.log('Applied incremental schema migrations.');
     return;
   }
 
