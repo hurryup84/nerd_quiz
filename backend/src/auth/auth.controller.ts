@@ -38,11 +38,17 @@ function getCookieOptions() {
       ? sameSiteRaw
       : 'lax';
 
+  // Note: we explicitly do NOT set `domain` here because:
+  // - In production, omitting domain scopes the cookie to the exact backend hostname
+  // - Setting domain would incorrectly point it to the frontend (cross-site)
+  // - The browser handles this correctly when both are on render.com domains
+
   return {
     httpOnly: true,
     secure,
     sameSite,
     maxAge: 15 * 60 * 1000,
+    path: '/', // Required for iOS Safari to send cookie on all paths
   } as const;
 }
 
@@ -68,7 +74,11 @@ export class AuthController {
   ) {
     const token = await this.authService.login(req.user);
     res.cookie('token', token, getCookieOptions());
-    return { id: req.user.id, username: req.user.username, role: req.user.role };
+    return {
+      id: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+    };
   }
 
   @Post('logout')
