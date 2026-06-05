@@ -1,2 +1,3 @@
 - [Backend npm scripts](backend-npm-scripts.md) — Use ./setup.sh and ./start.sh instead of direct npm/npx
 - [Node version requirement](node-version-requirement.md) — Node.js 22 is required for proper environment
+- [Database migrations](db-migrations.md) — Schema changes require migrations for existing production databases
