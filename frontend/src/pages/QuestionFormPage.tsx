@@ -90,7 +90,7 @@ export function QuestionFormPage() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['questions'] });
-      navigate('/admin/questions');
+      navigate('/questions/manage');
     },
     onError: (err: Error) => setError(err.message),
   });
@@ -183,7 +183,7 @@ export function QuestionFormPage() {
             <button
               type="button"
               className="btn"
-              onClick={() => navigate('/admin/questions')}
+              onClick={() => navigate('/questions/manage')}
             >
               Cancel
             </button>

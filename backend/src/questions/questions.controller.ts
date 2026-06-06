@@ -12,7 +12,8 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
-  SetMetadata,
+  Query,
+  Request,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { readFileSync } from 'node:fs';
@@ -23,6 +24,7 @@ import { CreateQuestionDto } from './dto/create-question.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../admin/admin.guard';
+import { ImporterGuard } from '../import/import.guard';
 
 class CreateNamedMetaDto {
   @IsString() name!: string;
@@ -39,7 +41,10 @@ export class QuestionsController {
   }
 
   @Get()
-  findAll() {
+  findAll(@Query('q') q?: string) {
+    if (q) {
+      return this.questionsService.search(q);
+    }
     return this.questionsService.findAll();
   }
 
@@ -99,17 +104,21 @@ export class QuestionsController {
     res.send(csv);
   }
 
-  @UseGuards(AdminGuard)
+  @UseGuards(ImporterGuard)
   @Post('import/csv')
   @UseInterceptors(FileInterceptor('file'))
-  async importCsv(@UploadedFile() file: Express.Multer.File) {
+  async importCsv(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: { user: { role: string } },
+  ) {
     if (!file) throw new BadRequestException('No file uploaded');
     const csv = file.buffer
       ? file.buffer.toString('utf-8')
       : file.path
         ? readFileSync(file.path, 'utf-8')
         : '';
-    const count = await this.questionsService.importCsv(csv);
+    const allowOverwrite = req.user.role === 'ADMIN';
+    const count = await this.questionsService.importCsv(csv, allowOverwrite);
     return { imported: count };
   }
 }

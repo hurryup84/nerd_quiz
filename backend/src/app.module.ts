@@ -7,6 +7,7 @@ import { QuestionsModule } from './questions/questions.module';
 import { QuizModule } from './quiz/quiz.module';
 import { SettingsModule } from './settings/settings.module';
 import { TeamsModule } from './teams/teams.module';
+import { ImportModule } from './import/import.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -22,6 +23,7 @@ import { AppService } from './app.service';
     QuizModule,
     SettingsModule,
     TeamsModule,
+    ImportModule,
   ],
 })
 export class AppModule {}

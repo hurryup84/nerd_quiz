@@ -102,6 +102,25 @@ export class QuestionsService {
     });
   }
 
+  async search(query: string) {
+    const searchTerm = query.trim();
+    if (!searchTerm) return this.findAll();
+
+    return this.prisma.question.findMany({
+      where: {
+        OR: [
+          { questionText: { contains: searchTerm } },
+          { answerA: { contains: searchTerm } },
+          { answerB: { contains: searchTerm } },
+          { answerC: { contains: searchTerm } },
+          { answerD: { contains: searchTerm } },
+        ],
+      },
+      orderBy: { id: 'asc' },
+      include: { category: true, difficulty: true },
+    });
+  }
+
   async count() {
     return this.prisma.question.count();
   }
@@ -193,7 +212,7 @@ export class QuestionsService {
     );
   }
 
-  async importCsv(csv: string): Promise<number> {
+  async importCsv(csv: string, allowOverwrite = true): Promise<number> {
     const lines = csv.split(/\r?\n/).filter((l) => l.trim());
     if (lines.length === 0) return 0;
 
@@ -278,6 +297,11 @@ export class QuestionsService {
       });
 
       if (exists) {
+        if (!allowOverwrite) {
+          throw new BadRequestException(
+            `Import failed: question "${questionIdToUse}" already exists. IMPORTER role cannot overwrite existing questions.`,
+          );
+        }
         await this.prisma.question.update({
           where: { questionId: questionIdToUse },
           data: {

@@ -38,6 +38,21 @@ export class UsersService {
     });
   }
 
+  async remove(id: number) {
+    return this.prisma.user.delete({ where: { id } });
+  }
+
+  async updateRole(id: number, role: string) {
+    const validRoles = ['USER', 'ADMIN', 'IMPORTER'];
+    if (!validRoles.includes(role)) {
+      throw new Error('Invalid role');
+    }
+    return this.prisma.user.update({
+      where: { id },
+      data: { role },
+    });
+  }
+
   async changePassword(
     id: number,
     currentPassword: string,

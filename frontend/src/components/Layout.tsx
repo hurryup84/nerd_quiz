@@ -18,14 +18,11 @@ export function Layout({ children }: { children: ReactNode }) {
       <Link to="/" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
       <Link to="/about" onClick={() => setMobileMenuOpen(false)}>About</Link>
       <Link to="/teams" onClick={() => setMobileMenuOpen(false)}>Teams</Link>
+      <Link to="/questions" onClick={() => setMobileMenuOpen(false)}>Questions</Link>
       <Link to="/history" onClick={() => setMobileMenuOpen(false)}>History</Link>
       <Link to="/insights" onClick={() => setMobileMenuOpen(false)}>Insights</Link>
-      <Link to="/questions/new" onClick={() => setMobileMenuOpen(false)}>+ Question</Link>
       {user?.role === 'ADMIN' && (
-        <>
-          <Link to="/admin/questions" onClick={() => setMobileMenuOpen(false)}>Manage</Link>
-          <Link to="/admin/teams" onClick={() => setMobileMenuOpen(false)}>Teams Admin</Link>
-        </>
+        <Link to="/admin/teams" onClick={() => setMobileMenuOpen(false)}>Admin</Link>
       )}
       <Link to="/settings/password" className="nav-user" onClick={() => setMobileMenuOpen(false)}>{user?.username}</Link>
       <button onClick={handleLogout} className="btn btn-sm">Logout</button>
