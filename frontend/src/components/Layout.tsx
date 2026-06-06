@@ -16,6 +16,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const navLinks = (
     <>
       <Link to="/" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
+      <Link to="/about" onClick={() => setMobileMenuOpen(false)}>About</Link>
       <Link to="/teams" onClick={() => setMobileMenuOpen(false)}>Teams</Link>
       <Link to="/history" onClick={() => setMobileMenuOpen(false)}>History</Link>
       <Link to="/insights" onClick={() => setMobileMenuOpen(false)}>Insights</Link>

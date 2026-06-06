@@ -328,6 +328,13 @@ h1, h2, h3, h4 {
 .result-correct-badge { color: var(--success); font-weight: 700; font-size: 1rem; }
 .result-picked-by { color: var(--accent); font-size: 0.8rem; white-space: nowrap; }
 
+/* About Page */
+.about-section { margin-bottom: 1.5rem; }
+.about-section h3 { margin-bottom: 0.5rem; }
+.template-info { background: var(--surface); }
+[data-theme='terminal'] .template-info { border-color: var(--primary); }
+.download-section { margin-top: 0.5rem; }
+
 /* Mobile Responsiveness */
 @media (max-width: 640px) {
   /* Main content padding */
