@@ -49,7 +49,7 @@ function getCookieOptions() {
     httpOnly: true,
     secure,
     sameSite,
-    maxAge: 15 * 60 * 1000,
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     path: '/', // Required for iOS to send cookie on all API paths
   } as const;
 }
