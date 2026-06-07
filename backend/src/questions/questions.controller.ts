@@ -21,10 +21,12 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { IsString } from 'class-validator';
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { IncompleteQuestionDto } from './dto/incomplete-question.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../admin/admin.guard';
 import { ImporterGuard } from '../import/import.guard';
+import { SettingsService } from '../settings/settings.service';
 
 class CreateNamedMetaDto {
   @IsString() name!: string;
@@ -33,7 +35,10 @@ class CreateNamedMetaDto {
 @Controller('questions')
 @UseGuards(JwtAuthGuard)
 export class QuestionsController {
-  constructor(private questionsService: QuestionsService) {}
+  constructor(
+    private questionsService: QuestionsService,
+    private settingsService: SettingsService,
+  ) {}
 
   @Get('meta')
   getMeta() {
@@ -120,5 +125,67 @@ export class QuestionsController {
     const allowOverwrite = req.user.role === 'ADMIN';
     const count = await this.questionsService.importCsv(csv, allowOverwrite);
     return { imported: count };
+  }
+
+  @Post('complete')
+  async completeQuestion(@Body() partial: IncompleteQuestionDto) {
+    const [endpoint, apiKey, promptTemplate, model] = await Promise.all([
+      this.settingsService.get('openrouterEndpoint'),
+      this.settingsService.get('openrouterApiKey'),
+      this.settingsService.get('openrouterPrompt'),
+      this.settingsService.get('openrouterModel'),
+    ]);
+
+    console.log('[OpenRouter] Request to complete question:', JSON.stringify(partial));
+    console.log('[OpenRouter] Using endpoint:', endpoint);
+    console.log('[OpenRouter] Using model:', model);
+
+    if (!apiKey) {
+      throw new BadRequestException('OpenRouter API key not configured');
+    }
+
+    const prompt = `${promptTemplate}Return JSON with: questionText, category (string), difficulty (string), info (string), answerA, answerB, answerC, answerD, correctAnswer (A/B/C/D). ${JSON.stringify(partial)}`;
+
+    console.log('[OpenRouter] Prompt:', prompt);
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('[OpenRouter] API error response:', errorText);
+      throw new BadRequestException(`OpenRouter API error: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('[OpenRouter] API response:', JSON.stringify(data));
+    let content = data.choices?.[0]?.message?.content ?? data.content ?? '';
+    console.log('[OpenRouter] Extracted content:', content);
+
+    // Strip markdown code fences if present
+    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      content = jsonMatch[1];
+      console.log('[OpenRouter] Stripped markdown, content:', content);
+    }
+
+    try {
+      const result = JSON.parse(content) as CreateQuestionDto;
+      console.log('[OpenRouter] Parsed result:', JSON.stringify(result));
+      return result;
+    } catch (parseError) {
+      console.log('[OpenRouter] JSON parse error:', parseError);
+      throw new BadRequestException('Invalid JSON returned from OpenRouter');
+    }
   }
 }

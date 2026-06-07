@@ -2,21 +2,40 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 
 
+interface Settings {
+  theme: string;
+  refreshInterval: number;
+  openrouterEndpoint: string;
+  openrouterApiKey: string;
+  openrouterPrompt: string;
+  openrouterModel: string;
+}
+
+const DEFAULT_MODELS = [
+  'openrouter/free',
+  'anthropic/claude-3-haiku-20240307',
+  'anthropic/claude-3-sonnet-20240229',
+  'anthropic/claude-3-opus-20240229',
+  'openai/gpt-4o',
+  'openai/gpt-4o-mini',
+  'google/gemini-2.0-flash',
+  'google/gemini-1.5-flash',
+];
 
 export function AdminAppPage() {
 
-  const { data: settings, isLoading: settingsLoading } = useQuery<{ theme: string; refreshInterval: number }>({
+  const { data: settings, isLoading: settingsLoading } = useQuery<Settings>({
     queryKey: ['settings'],
-    queryFn: () => api.get('/settings'),
+    queryFn: () => api.get<Settings>('/settings'),
     staleTime: 1000 * 60,
   });
   const queryClient = useQueryClient();
 
-    const themeMutation = useMutation({
+  const themeMutation = useMutation({
     mutationFn: (newTheme: string) => api.put('/settings/theme', { theme: newTheme }),
     onSuccess: (_, newTheme) => {
       document.documentElement.setAttribute('data-theme', newTheme);
-      queryClient.setQueryData(['settings'], (old: { theme: string; refreshInterval: number } | undefined) =>
+      queryClient.setQueryData(['settings'], (old: Settings | undefined) =>
         old ? { ...old, theme: newTheme } : old
       );
     },
@@ -28,7 +47,7 @@ export function AdminAppPage() {
   const refreshMutation = useMutation({
     mutationFn: (secs: number) => api.put('/settings/refreshInterval', { refreshInterval: secs }),
     onSuccess: (_, secs) => {
-      queryClient.setQueryData(['settings'], (old: { theme: string; refreshInterval: number } | undefined) =>
+      queryClient.setQueryData(['settings'], (old: Settings | undefined) =>
         old ? { ...old, refreshInterval: secs } : old
       );
     },
@@ -37,7 +56,59 @@ export function AdminAppPage() {
     },
   });
 
+  const openrouterEndpointMutation = useMutation({
+    mutationFn: (endpoint: string) => api.put('/settings/openrouterEndpoint', { openrouterEndpoint: endpoint }),
+    onSuccess: (_, endpoint) => {
+      queryClient.setQueryData(['settings'], (old: Settings | undefined) =>
+        old ? { ...old, openrouterEndpoint: endpoint } : old
+      );
+    },
+    onError: (error) => {
+      alert(`Failed to update OpenRouter endpoint: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    },
+  });
+
+  const openrouterApiKeyMutation = useMutation({
+    mutationFn: (apiKey: string) => api.put('/settings/openrouterApiKey', { openrouterApiKey: apiKey }),
+    onSuccess: (_, apiKey) => {
+      queryClient.setQueryData(['settings'], (old: Settings | undefined) =>
+        old ? { ...old, openrouterApiKey: apiKey } : old
+      );
+    },
+    onError: (error) => {
+      alert(`Failed to update OpenRouter API key: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    },
+  });
+
+  const openrouterPromptMutation = useMutation({
+    mutationFn: (prompt: string) => api.put('/settings/openrouterPrompt', { openrouterPrompt: prompt }),
+    onSuccess: (_, prompt) => {
+      queryClient.setQueryData(['settings'], (old: Settings | undefined) =>
+        old ? { ...old, openrouterPrompt: prompt } : old
+      );
+    },
+    onError: (error) => {
+      alert(`Failed to update OpenRouter prompt: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    },
+  });
+
+  const openrouterModelMutation = useMutation({
+    mutationFn: (model: string) => api.put('/settings/openrouterModel', { openrouterModel: model }),
+    onSuccess: (_, model) => {
+      queryClient.setQueryData(['settings'], (old: Settings | undefined) =>
+        old ? { ...old, openrouterModel: model } : old
+      );
+    },
+    onError: (error) => {
+      alert(`Failed to update OpenRouter model: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    },
+  });
+
   const isLoading = settingsLoading;
+  const openrouterEndpoint = settings?.openrouterEndpoint ?? '';
+  const openrouterApiKey = settings?.openrouterApiKey ?? '';
+  const openrouterPrompt = settings?.openrouterPrompt ?? '';
+  const openrouterModel = settings?.openrouterModel ?? DEFAULT_MODELS[0];
 
   if (isLoading) return <div className="loading">Loading settings...</div>;
 
@@ -78,6 +149,62 @@ export function AdminAppPage() {
             <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Saving…</span>
           )}
           <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Changes apply globally to all users.</span>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <div className="card-header">
+          <h2>OpenRouter AI Settings</h2>
+        </div>
+        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="form-group">
+            <label>OpenRouter Endpoint</label>
+            <input
+              type="text"
+              defaultValue={openrouterEndpoint}
+              onChange={(e) => openrouterEndpointMutation.mutate(e.target.value)}
+              disabled={openrouterEndpointMutation.isPending}
+              placeholder="https://openrouter.ai/api/v1/chat/completions"
+              style={{ width: '100%', padding: '0.5rem', fontSize: '0.875rem' }}
+            />
+          </div>
+          <div className="form-group">
+            <label>OpenRouter API Key</label>
+            <input
+              type="password"
+              defaultValue={openrouterApiKey}
+              onChange={(e) => openrouterApiKeyMutation.mutate(e.target.value)}
+              disabled={openrouterApiKeyMutation.isPending}
+              placeholder="sk-..."
+              style={{ width: '100%', padding: '0.5rem', fontSize: '0.875rem' }}
+            />
+          </div>
+          <div className="form-group">
+            <label>OpenRouter Model</label>
+            <select
+              defaultValue={openrouterModel}
+              onChange={(e) => openrouterModelMutation.mutate(e.target.value)}
+              disabled={openrouterModelMutation.isPending}
+              style={{ width: '100%', padding: '0.5rem', fontSize: '0.875rem' }}
+            >
+              {DEFAULT_MODELS.map((model) => (
+                <option key={model} value={model}>
+                  {model}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Prompt Template</label>
+            <textarea
+              defaultValue={openrouterPrompt}
+              onChange={(e) => openrouterPromptMutation.mutate(e.target.value)}
+              disabled={openrouterPromptMutation.isPending}
+              rows={4}
+              placeholder="Complete the following quiz question JSON. Fill in any missing fields (category, difficulty, info, answer options, and correct answer). For category and difficulty, return the name as a string. (e.g., 'Science', 'Easy') Put the correct answer randomly in A,B,C or D and set correctAnswer accordingly. Return only valid JSON with fields: questionText, category (string), difficulty (string), info (string), answerA, answerB, answerC, answerD, correctAnswer. Question JSON: "
+              style={{ width: '100%', padding: '0.5rem', fontSize: '0.875rem', fontFamily: 'monospace' }}
+            />
+          </div>
         </div>
       </div>
     </div>

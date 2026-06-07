@@ -25,4 +25,32 @@ export class SettingsController {
     await this.settingsService.set('refreshInterval', String(refreshInterval));
     return { refreshInterval };
   }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Put('openrouterEndpoint')
+  async setOpenrouterEndpoint(@Body('openrouterEndpoint') endpoint: string) {
+    await this.settingsService.set('openrouterEndpoint', endpoint);
+    return { openrouterEndpoint: endpoint };
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Put('openrouterApiKey')
+  async setOpenrouterApiKey(@Body('openrouterApiKey') apiKey: string) {
+    await this.settingsService.set('openrouterApiKey', apiKey);
+    return { openrouterApiKey: apiKey };
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Put('openrouterPrompt')
+  async setOpenrouterPrompt(@Body('openrouterPrompt') prompt: string) {
+    await this.settingsService.set('openrouterPrompt', prompt);
+    return { openrouterPrompt: prompt };
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Put('openrouterModel')
+  async setOpenrouterModel(@Body('openrouterModel') model: string) {
+    await this.settingsService.set('openrouterModel', model);
+    return { openrouterModel: model };
+  }
 }

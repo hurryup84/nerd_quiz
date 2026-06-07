@@ -4,6 +4,11 @@ import { PrismaService } from '../prisma/prisma.service';
 const DEFAULTS: Record<string, string> = {
   theme: 'terminal',
   refreshInterval: '5',
+  openrouterEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
+  openrouterApiKey: '',
+  openrouterModel: 'openrouter/free',
+  openrouterPrompt:
+    'Complete the following quiz question JSON. Fill in any missing fields (category, difficulty, info, answer options, and correct answer). For category and difficulty, return the name as a string (e.g., "Science", "Easy"). Randomly assign the correct answer to one of options A, B, C, or D. Return only valid JSON with fields: questionText, category (string), difficulty (string), info (string), answerA, answerB, answerC, answerD, correctAnswer. Question JSON: ',
 };
 
 @Injectable()
@@ -34,7 +39,14 @@ export class SettingsService implements OnModuleInit {
     });
   }
 
-  async getAll(): Promise<{ theme: string; refreshInterval: number }> {
+  async getAll(): Promise<{
+    theme: string;
+    refreshInterval: number;
+    openrouterEndpoint: string;
+    openrouterApiKey: string;
+    openrouterModel: string;
+    openrouterPrompt: string;
+  }> {
     const rows = await this.prisma.settings.findMany();
     const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
     return {
@@ -42,6 +54,11 @@ export class SettingsService implements OnModuleInit {
       refreshInterval: Number(
         map['refreshInterval'] ?? DEFAULTS['refreshInterval'],
       ),
+      openrouterEndpoint:
+        map['openrouterEndpoint'] ?? DEFAULTS['openrouterEndpoint'],
+      openrouterApiKey: map['openrouterApiKey'] ?? DEFAULTS['openrouterApiKey'],
+      openrouterModel: map['openrouterModel'] ?? DEFAULTS['openrouterModel'],
+      openrouterPrompt: map['openrouterPrompt'] ?? DEFAULTS['openrouterPrompt'],
     };
   }
 

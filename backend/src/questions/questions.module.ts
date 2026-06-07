@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { QuestionsController } from './questions.controller';
 import { QuestionsService } from './questions.service';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
-  imports: [MulterModule.register({ limits: { fileSize: 5 * 1024 * 1024 } })],
+  imports: [MulterModule.register({ limits: { fileSize: 5 * 1024 * 1024 } }), SettingsModule],
   controllers: [QuestionsController],
   providers: [QuestionsService],
 })

@@ -1,0 +1,1 @@
+ use "nvm use 22" to have proper env for nvm and npx calls.
