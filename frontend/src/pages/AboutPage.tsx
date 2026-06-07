@@ -12,7 +12,7 @@ export function AboutPage() {
             After everyone finalizes their answers, the results are revealed showing who got the most correct.
           </p>
           <p>
-            <strong>Rounds:</strong> An admin or team leader starts a round by selecting questions and the number of participants.
+            <strong>Rounds:</strong> Everyone can start a round by selecting questions and the number of participants and team.
             Each player works through the questions at their own pace, then finalizes their answers.
             Once all participants have finished, the round is complete and scores are tallied.
           </p>
@@ -25,8 +25,8 @@ export function AboutPage() {
             for each team, allowing for specialization (e.g., a team could be "Movies Only" or "Tech Experts").
           </p>
           <p>
-            <strong>Creating Teams:</strong> Team admins can create teams and invite other users.
-            Each team has a unique invite code that can be shared with potential members.
+            <strong>Creating Teams:</strong> Users can create teams and invite other users.
+            Each team owner can invite users by name. Invited users see their invites on the teams page.
           </p>
         </div>
 
@@ -34,7 +34,7 @@ export function AboutPage() {
           <h3>✉️ Invitations</h3>
           <p>
             To invite users to a team, go to the Teams page and create a team if you haven't already.
-            Share the team invite code with anyone you want to join.
+            Then add the user by their username.
           </p>
           <p>
             Team members receive exclusive access to team-specific quiz rounds and can have
@@ -45,8 +45,7 @@ export function AboutPage() {
         <div className="about-section">
           <h3>➕ Adding Questions</h3>
           <p>
-            You can submit new questions directly through the app or by emailing them to{' '}
-            <a href="mailto:questions@nerd-quiz.example.com">questions@nerd-quiz.example.com</a>.
+            You can submit new questions directly through the website. Go to the Questions page and create you own.
           </p>
           <p>
             For bulk submissions, download the template file and fill it out with your questions:
