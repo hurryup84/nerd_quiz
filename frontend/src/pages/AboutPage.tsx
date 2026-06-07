@@ -45,7 +45,7 @@ export function AboutPage() {
         <div className="about-section">
           <h3>➕ Adding Questions</h3>
           <p>
-            You can submit new questions directly through the website. Go to the Questions page and create you own.
+            You can submit new questions directly through the website. Go to the Questions page and create your own.
           </p>
           <p>
             For bulk submissions, download the template file and fill it out with your questions:
@@ -80,6 +80,41 @@ export function AboutPage() {
               ⚠️ Warning: Using an existing questionId will overwrite that question. Double-check IDs before importing!
             </p>
           </div>
+        </div>
+
+        <div className="about-section">
+          <h3>🤖 AI Question Generation</h3>
+          <p>
+            When adding questions, you can use AI assistance to complete partial questions.
+            If you leave fields like category, difficulty, or answers empty, the system can request
+            an AI to fill them in automatically.
+          </p>
+          <p>
+            AI-assisted questions are marked with a badge so you know they were generated with help.
+            You can review and edit all AI-generated content before saving.
+          </p>
+        </div>
+
+        <div className="about-section">
+          <h3>🔒 Data Protection</h3>
+          <p>
+            Your privacy matters. We collect only the minimum data needed for the quiz game:
+          </p>
+          <ul style={{ marginBottom: '0.5rem', paddingLeft: '1.5rem' }}>
+            <li><strong>Username and password</strong> — For account authentication</li>
+            <li><strong>Quiz answers and scores</strong> — To track game results</li>
+            <li><strong>Team memberships</strong> — For team-based rounds</li>
+          </ul>
+          <p>
+            <strong>Account Deletion:</strong> Unused accounts are automatically deleted after 3 months of inactivity.
+            This helps keep the system clean and removes dormant user data.
+          </p>
+          <p>
+            <strong>Contact:</strong> For questions, feedback, or support, email{' '}
+            <a href="mailto:nerdyquiz@proton.me" style={{ color: 'var(--accent)' }}>
+              nerdyquiz@proton.me
+            </a>
+          </p>
         </div>
       </div>
     </div>
