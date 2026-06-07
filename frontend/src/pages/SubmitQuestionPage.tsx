@@ -185,33 +185,6 @@ export function SubmitQuestionPage() {
     <div className="page">
       <div className="card">
         <h2>Submit a Question</h2>
-        {error && <div className="alert alert-error">{error}</div>}
-        {showAIConfirm && (
-          <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
-            <p>
-              The following fields are empty: {aiFields.join(', ')}.
-              Would you like to ask AI to complete this question?
-            </p>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleAIConfirm}
-                disabled={aiCompleteMutation.isPending}
-              >
-                {aiCompleteMutation.isPending ? 'Loading…' : 'Yes, complete with AI'}
-              </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={handleAICancel}
-                disabled={aiCompleteMutation.isPending || mutation.isPending}
-              >
-                No, save as is
-              </button>
-            </div>
-          </div>
-        )}
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
             <label>Question *</label>
@@ -275,6 +248,33 @@ export function SubmitQuestionPage() {
               <option value="D">D</option>
             </select>
           </div>
+        {error && <div className="alert alert-error">{error}</div>}
+        {showAIConfirm && (
+          <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
+            <p>
+              The following fields are empty: {aiFields.join(', ')}.
+              Would you like to ask AI to complete this question?
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleAIConfirm}
+                disabled={aiCompleteMutation.isPending}
+              >
+                {aiCompleteMutation.isPending ? 'Loading…' : 'Yes, complete with AI'}
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={handleAICancel}
+                disabled={aiCompleteMutation.isPending || mutation.isPending}
+              >
+                No, save as is
+              </button>
+            </div>
+          </div>
+        )}
           <div className="form-actions">
             <button
               type="submit"
