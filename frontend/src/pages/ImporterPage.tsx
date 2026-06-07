@@ -49,7 +49,7 @@ export function ImporterPage() {
       return;
     }
     const data = await readJsonSafe<{ imported?: number }>(res);
-    alert(`Imported ${data?.imported ?? 0} question(s). Note: Existing questions cannot be overwritten with IMPORTER role.`);
+    alert(`Imported ${data?.imported ?? 0} question(s).`);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 

@@ -224,7 +224,11 @@ export class QuestionsService {
     );
   }
 
-  async importCsv(csv: string, allowOverwrite = true, importerId?: number): Promise<number> {
+  async importCsv(
+    csv: string,
+    allowOverwrite = true,
+    importerId?: number,
+  ): Promise<number> {
     const lines = csv.split(/\r?\n/).filter((l) => l.trim());
     if (lines.length === 0) return 0;
 
@@ -243,10 +247,11 @@ export class QuestionsService {
         );
       }
 
-      const valueByHeader = (key: string): string => {
+      const valueByHeader = (key: string): string | undefined => {
         const index = headerIndex.get(key);
-        if (index === undefined) return '';
-        return (cols[index] ?? '').trim();
+        if (index === undefined) return undefined;
+        const val = cols[index];
+        return val?.trim();
       };
 
       const csvQuestionId =
@@ -257,22 +262,27 @@ export class QuestionsService {
       const difficultyName = valueByHeader('difficulty');
       const info = valueByHeader('info');
 
-      const answerA =
-        valueByHeader('answerA') || cols[cols.length - 5]?.trim() || '';
-      const answerB =
-        valueByHeader('answerB') || cols[cols.length - 4]?.trim() || '';
-      const answerC =
-        valueByHeader('answerC') || cols[cols.length - 3]?.trim() || '';
-      const answerD =
-        valueByHeader('answerD') || cols[cols.length - 2]?.trim() || '';
+      // Extract answers: use header mapping if available, otherwise fallback to positional
+      const answerA = valueByHeader('answerA') ?? cols[cols.length - 5]?.trim();
+      const answerB = valueByHeader('answerB') ?? cols[cols.length - 4]?.trim();
+      const answerC = valueByHeader('answerC') ?? cols[cols.length - 3]?.trim();
+      const answerD = valueByHeader('answerD') ?? cols[cols.length - 2]?.trim();
       const correctAnswer =
-        valueByHeader('correctAnswer') || cols[cols.length - 1]?.trim() || '';
+        valueByHeader('correctAnswer') ?? cols[cols.length - 1]?.trim();
 
       // Generate ID if empty (for CSV imports without questionId column)
-      const questionIdToUse = csvQuestionId || (await this.generateQuestionId());
-      if (!questionText || !answerA || !answerB || !answerC || !answerD) {
+      const questionIdToUse =
+        csvQuestionId || (await this.generateQuestionId());
+
+      // Validate required fields with specific error messages
+      if (!questionText) {
         throw new BadRequestException(
-          `Import failed: row ${lineIndex + 1} is missing question text or answers`,
+          `Import failed: row ${lineIndex + 1} is missing question text`,
+        );
+      }
+      if (!answerA || !answerB || !answerC || !answerD) {
+        throw new BadRequestException(
+          `Import failed: row ${lineIndex + 1} has incomplete answer options`,
         );
       }
       if (!['A', 'B', 'C', 'D'].includes(correctAnswer)) {
