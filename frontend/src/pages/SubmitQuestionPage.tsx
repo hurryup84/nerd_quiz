@@ -13,6 +13,7 @@ interface QuestionForm {
   answerC: string;
   answerD: string;
   correctAnswer: string;
+  aiAssisted?: boolean;
 }
 
 interface QuestionsMeta {
@@ -50,6 +51,7 @@ export function SubmitQuestionPage() {
   const [form, setForm] = useState<QuestionForm>(empty);
   const [error, setError] = useState('');
   const [showAIConfirm, setShowAIConfirm] = useState(false);
+  const [aiCompleted, setAiCompleted] = useState(false);
 
   const { data: meta } = useQuery<QuestionsMeta>({
     queryKey: ['questions', 'meta'],
@@ -83,6 +85,7 @@ export function SubmitQuestionPage() {
         answerD: completed.answerD,
         correctAnswer: completed.correctAnswer,
       });
+      setAiCompleted(true);
       setShowAIConfirm(false);
     },
     onError: (err: Error) => {
@@ -92,13 +95,14 @@ export function SubmitQuestionPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: (data: QuestionForm) =>
+    mutationFn: ({ data, aiAssisted }: { data: QuestionForm; aiAssisted: boolean }) =>
       api.post('/questions', {
         ...data,
         categoryId: data.categoryId === '' ? undefined : Number(data.categoryId),
         difficultyId:
           data.difficultyId === '' ? undefined : Number(data.difficultyId),
         info: data.info.trim() || undefined,
+        aiAssisted,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['questions'] });
@@ -132,7 +136,7 @@ export function SubmitQuestionPage() {
       return;
     }
 
-    mutation.mutate(form);
+    mutation.mutate({ data: form, aiAssisted: aiCompleted });
   };
 
   const handleAIConfirm = () => {
@@ -158,7 +162,8 @@ export function SubmitQuestionPage() {
       setShowAIConfirm(false);
       return;
     }
-    mutation.mutate(form);
+    setAiCompleted(false);
+    mutation.mutate({ data: form, aiAssisted: false });
   };
 
   const getAINeededFields = (data: QuestionForm) => {

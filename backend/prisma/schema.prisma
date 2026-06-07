@@ -20,6 +20,7 @@ model User {
   createdTeams  Team[]
   sentInvites   TeamInvite[]        @relation("Inviter")
   receivedInvites TeamInvite[]      @relation("Invitee")
+  createdQuestions Question[]       @relation("QuestionCreator")
 
   @@index([username])
 }
@@ -39,14 +40,18 @@ model Question {
   playCount     Int             @default(0)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  creatorId     Int?
+  aiAssisted    Boolean         @default(false)
   category      Category?       @relation(fields: [categoryId], references: [id])
   difficulty    Difficulty?     @relation(fields: [difficultyId], references: [id])
+  creator         User?           @relation("QuestionCreator", fields: [creatorId], references: [id])
   roundQuestions RoundQuestion[]
 
   @@index([questionId])
   @@index([categoryId])
   @@index([difficultyId])
   @@index([playCount])
+  @@index([creatorId])
 }
 
 model Category {

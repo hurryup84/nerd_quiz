@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsString, IsIn, IsInt, IsOptional } from 'class-validator';
+import { IsString, IsIn, IsInt, IsOptional, IsBoolean } from 'class-validator';
 
 export class CreateQuestionDto {
   @IsString() questionText!: string;
@@ -22,4 +22,14 @@ export class CreateQuestionDto {
   @IsString() answerC!: string;
   @IsString() answerD!: string;
   @IsIn(['A', 'B', 'C', 'D']) correctAnswer!: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  creatorId?: number;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  aiAssisted?: boolean;
 }

@@ -78,8 +78,8 @@ export class QuestionsController {
   }
 
   @Post()
-  create(@Body() dto: CreateQuestionDto) {
-    return this.questionsService.create(dto);
+  create(@Body() dto: CreateQuestionDto, @Request() req: { user: { id: number } }) {
+    return this.questionsService.create({ ...dto, creatorId: req.user.id });
   }
 
   @UseGuards(AdminGuard)
@@ -114,7 +114,7 @@ export class QuestionsController {
   @UseInterceptors(FileInterceptor('file'))
   async importCsv(
     @UploadedFile() file: Express.Multer.File,
-    @Request() req: { user: { role: string } },
+    @Request() req: { user: { id: number; role: string } },
   ) {
     if (!file) throw new BadRequestException('No file uploaded');
     const csv = file.buffer
@@ -123,7 +123,7 @@ export class QuestionsController {
         ? readFileSync(file.path, 'utf-8')
         : '';
     const allowOverwrite = req.user.role === 'ADMIN';
-    const count = await this.questionsService.importCsv(csv, allowOverwrite);
+    const count = await this.questionsService.importCsv(csv, allowOverwrite, req.user.id);
     return { imported: count };
   }
 

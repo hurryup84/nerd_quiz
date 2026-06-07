@@ -78,6 +78,14 @@ export class QuestionsService {
 
     await this.ensureMetaExists(dto.categoryId, dto.difficultyId);
 
+    if (dto.creatorId !== undefined) {
+      const creator = await this.prisma.user.findUnique({
+        where: { id: dto.creatorId },
+      });
+      if (!creator)
+        throw new BadRequestException('Creator user does not exist');
+    }
+
     return this.prisma.question.create({
       data: {
         questionId,
@@ -90,15 +98,17 @@ export class QuestionsService {
         info: this.normalizeOptionalString(dto.info),
         categoryId: dto.categoryId,
         difficultyId: dto.difficultyId,
+        creatorId: dto.creatorId,
+        aiAssisted: dto.aiAssisted ?? false,
       },
-      include: { category: true, difficulty: true },
+      include: { category: true, difficulty: true, creator: true },
     });
   }
 
   async findAll() {
     return this.prisma.question.findMany({
       orderBy: { id: 'asc' },
-      include: { category: true, difficulty: true },
+      include: { category: true, difficulty: true, creator: true },
     });
   }
 
@@ -117,7 +127,7 @@ export class QuestionsService {
         ],
       },
       orderBy: { id: 'asc' },
-      include: { category: true, difficulty: true },
+      include: { category: true, difficulty: true, creator: true },
     });
   }
 
@@ -128,7 +138,7 @@ export class QuestionsService {
   async findOne(id: number) {
     const q = await this.prisma.question.findUnique({
       where: { id },
-      include: { category: true, difficulty: true },
+      include: { category: true, difficulty: true, creator: true },
     });
     if (!q) throw new NotFoundException('Question not found');
     return q;
@@ -159,7 +169,7 @@ export class QuestionsService {
   async exportCsv(): Promise<string> {
     const questions = await this.findAll();
     const header =
-      'questionId,questionText,category,difficulty,info,answerA,answerB,answerC,answerD,correctAnswer';
+      'questionId,questionText,category,difficulty,info,answerA,answerB,answerC,answerD,correctAnswer,creator,aiAssisted';
     const rows = questions.map((q) =>
       [
         q.questionId,
@@ -172,6 +182,8 @@ export class QuestionsService {
         q.answerC,
         q.answerD,
         q.correctAnswer,
+        q.creator?.username ?? '',
+        q.aiAssisted ? 'true' : 'false',
       ]
         .map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`)
         .join(','),
@@ -212,7 +224,7 @@ export class QuestionsService {
     );
   }
 
-  async importCsv(csv: string, allowOverwrite = true): Promise<number> {
+  async importCsv(csv: string, allowOverwrite = true, importerId?: number): Promise<number> {
     const lines = csv.split(/\r?\n/).filter((l) => l.trim());
     if (lines.length === 0) return 0;
 
@@ -314,6 +326,8 @@ export class QuestionsService {
             categoryId,
             difficultyId,
             info: this.normalizeOptionalString(info ?? undefined),
+            creatorId: importerId ?? exists.creatorId,
+            aiAssisted: false,
           },
         });
       } else {
@@ -329,6 +343,8 @@ export class QuestionsService {
             categoryId,
             difficultyId,
             info: this.normalizeOptionalString(info ?? undefined),
+            creatorId: importerId,
+            aiAssisted: false,
           },
         });
       }

@@ -20,6 +20,8 @@ interface Question extends Omit<QuestionForm, 'categoryId' | 'difficultyId'> {
   questionId: string;
   category?: { id: number; name: string } | null;
   difficulty?: { id: number; name: string } | null;
+  creator?: { id: number; username: string } | null;
+  aiAssisted?: boolean;
 }
 
 interface QuestionsMeta {
@@ -59,6 +61,7 @@ export function QuestionFormPage() {
   const [form, setForm] = useState<QuestionForm>(empty);
   const [error, setError] = useState('');
   const [showAIConfirm, setShowAIConfirm] = useState(false);
+  const [aiCompleted, setAiCompleted] = useState(false);
 
   const { data: existing } = useQuery<Question>({
     queryKey: ['question', id],
@@ -99,6 +102,7 @@ export function QuestionFormPage() {
         answerD: completed.answerD,
         correctAnswer: completed.correctAnswer,
       });
+      setAiCompleted(true);
       setShowAIConfirm(false);
     },
     onError: (err: Error) => {
@@ -124,13 +128,14 @@ export function QuestionFormPage() {
   }, [existing]);
 
   const mutation = useMutation({
-    mutationFn: (data: QuestionForm) => {
+    mutationFn: ({ data, aiAssisted }: { data: QuestionForm; aiAssisted: boolean }) => {
       const payload = {
         ...data,
         categoryId: data.categoryId === '' ? undefined : Number(data.categoryId),
         difficultyId:
           data.difficultyId === '' ? undefined : Number(data.difficultyId),
         info: data.info.trim() || undefined,
+        aiAssisted,
       };
 
       return isEdit
@@ -169,7 +174,7 @@ export function QuestionFormPage() {
       return;
     }
 
-    mutation.mutate(form);
+    mutation.mutate({ data: form, aiAssisted: aiCompleted });
   };
 
   const handleAIConfirm = () => {
@@ -195,7 +200,8 @@ export function QuestionFormPage() {
       setShowAIConfirm(false);
       return;
     }
-    mutation.mutate(form);
+    setAiCompleted(false);
+    mutation.mutate({ data: form, aiAssisted: false });
   };
 
   const getAINeededFields = (data: QuestionForm) => {
