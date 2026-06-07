@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 
@@ -16,6 +17,8 @@ const DEFAULT_MODELS = [
 ];
 
 export function AdminAppPage() {
+  const [promptDraft, setPromptDraft] = useState('');
+  const [promptSaved, setPromptSaved] = useState(false);
 
   const { data: settings, isLoading: settingsLoading } = useQuery<Settings>({
     queryKey: ['settings'],
@@ -23,6 +26,13 @@ export function AdminAppPage() {
     staleTime: 1000 * 60,
   });
   const queryClient = useQueryClient();
+
+  // Initialize draft when settings load
+  useEffect(() => {
+    if (settings?.openrouterPrompt !== undefined) {
+      setPromptDraft(settings.openrouterPrompt);
+    }
+  }, [settings?.openrouterPrompt]);
 
   const themeMutation = useMutation({
     mutationFn: (newTheme: string) => api.put('/settings/theme', { theme: newTheme }),
@@ -79,6 +89,7 @@ export function AdminAppPage() {
       queryClient.setQueryData(['settings'], (old: Settings | undefined) =>
         old ? { ...old, openrouterPrompt: prompt } : old
       );
+      setPromptSaved(true);
     },
     onError: (error) => {
       alert(`Failed to update OpenRouter prompt: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -100,7 +111,6 @@ export function AdminAppPage() {
   const isLoading = settingsLoading;
   const openrouterEndpoint = settings?.openrouterEndpoint ?? '';
   const openrouterApiKey = settings?.openrouterApiKey ?? '';
-  const openrouterPrompt = settings?.openrouterPrompt ?? '';
   const openrouterModel = settings?.openrouterModel ?? DEFAULT_MODELS[0];
 
   if (isLoading) return <div className="loading">Loading settings...</div>;
@@ -190,13 +200,26 @@ export function AdminAppPage() {
           <div className="form-group">
             <label>Prompt Template</label>
             <textarea
-              defaultValue={openrouterPrompt}
-              onChange={(e) => openrouterPromptMutation.mutate(e.target.value)}
+              value={promptDraft}
+              onChange={(e) => {
+                setPromptDraft(e.target.value);
+                setPromptSaved(false);
+              }}
               disabled={openrouterPromptMutation.isPending}
               rows={4}
               placeholder="Complete the following quiz question JSON. Fill in any missing fields (category, difficulty, info, answer options, and correct answer). For category and difficulty, return the name as a string. (e.g., 'Science', 'Easy') Put the correct answer randomly in A,B,C or D and set correctAnswer accordingly. Return only valid JSON with fields: questionText, category (string), difficulty (string), info (string), answerA, answerB, answerC, answerD, correctAnswer. Question JSON: "
               style={{ width: '100%', padding: '0.5rem', fontSize: '0.875rem', fontFamily: 'monospace' }}
             />
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => openrouterPromptMutation.mutate(promptDraft)}
+                disabled={openrouterPromptMutation.isPending || promptSaved}
+              >
+                {openrouterPromptMutation.isPending ? 'Saving…' : promptSaved ? 'Saved' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
