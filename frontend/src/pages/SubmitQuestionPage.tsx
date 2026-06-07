@@ -235,7 +235,7 @@ export function SubmitQuestionPage() {
             />
           </div>
           {(['A', 'B', 'C', 'D'] as const).map((letter) => {
-            const field = `answer${letter}` as keyof QuestionForm;
+            const field = `answer${letter}` as 'answerA' | 'answerB' | 'answerC' | 'answerD';
             return (
               <div className="form-group" key={letter}>
                 <label>Answer {letter} *</label>
