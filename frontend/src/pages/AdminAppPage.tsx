@@ -13,13 +13,6 @@ interface Settings {
 
 const DEFAULT_MODELS = [
   'openrouter/free',
-  'anthropic/claude-3-haiku-20240307',
-  'anthropic/claude-3-sonnet-20240229',
-  'anthropic/claude-3-opus-20240229',
-  'openai/gpt-4o',
-  'openai/gpt-4o-mini',
-  'google/gemini-2.0-flash',
-  'google/gemini-1.5-flash',
 ];
 
 export function AdminAppPage() {
