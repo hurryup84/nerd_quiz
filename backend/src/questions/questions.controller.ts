@@ -144,7 +144,10 @@ export class QuestionsController {
       throw new BadRequestException('OpenRouter API key not configured');
     }
 
-    const prompt = `${promptTemplate}Return JSON with: questionText, category (string), difficulty (string), info (string), answerA, answerB, answerC, answerD, correctAnswer (A/B/C/D). ${JSON.stringify(partial)}`;
+    // Use explicit prompt to ensure all fields are requested
+    const explicitPrompt = `Complete the following quiz question JSON. Fill in any missing fields including answers and correct answer. Return only valid JSON with these fields: questionText (string), category (string), difficulty (string), info (string), answerA (string), answerB (string), answerC (string), answerD (string), correctAnswer (A/B/C/D). Question JSON: ${JSON.stringify(partial)}`;
+
+    const prompt = `${promptTemplate}${explicitPrompt}`;
 
     console.log('[OpenRouter] Prompt:', prompt);
 
@@ -182,10 +185,14 @@ export class QuestionsController {
     try {
       const result = JSON.parse(content) as CreateQuestionDto;
       console.log('[OpenRouter] Parsed result:', JSON.stringify(result));
+      // Validate that we have all required fields
+      if (!result.questionText || !result.answerA || !result.answerB || !result.answerC || !result.answerD) {
+        throw new BadRequestException('OpenRouter response missing required fields (questionText, answerA-D)');
+      }
       return result;
     } catch (parseError) {
       console.log('[OpenRouter] JSON parse error:', parseError);
-      throw new BadRequestException('Invalid JSON returned from OpenRouter');
+      throw new BadRequestException(`Invalid JSON returned from OpenRouter: ${content?.substring(0, 100)}...`);
     }
   }
 }

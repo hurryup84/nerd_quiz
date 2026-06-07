@@ -50,7 +50,7 @@ const empty: QuestionForm = {
   answerB: '',
   answerC: '',
   answerD: '',
-  correctAnswer: 'A',
+  correctAnswer: '',
 };
 
 export function QuestionFormPage() {
@@ -129,7 +129,7 @@ export function QuestionFormPage() {
 
   const mutation = useMutation({
     mutationFn: ({ data, aiAssisted }: { data: QuestionForm; aiAssisted: boolean }) => {
-      const payload = {
+      const payload: Record<string, unknown> = {
         ...data,
         categoryId: data.categoryId === '' ? undefined : Number(data.categoryId),
         difficultyId:
@@ -137,6 +137,10 @@ export function QuestionFormPage() {
         info: data.info.trim() || undefined,
         aiAssisted,
       };
+      // Only send correctAnswer if it has a value (A, B, C, or D)
+      if (!data.correctAnswer || !['A', 'B', 'C', 'D'].includes(data.correctAnswer)) {
+        delete payload.correctAnswer;
+      }
 
       return isEdit
         ? api.put<Question>(`/questions/${id}`, payload)
@@ -160,8 +164,7 @@ export function QuestionFormPage() {
            !data.answerA ||
            !data.answerB ||
            !data.answerC ||
-           !data.answerD ||
-           !data.correctAnswer;
+           !data.answerD;
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -178,7 +181,8 @@ export function QuestionFormPage() {
   };
 
   const handleAIConfirm = () => {
-    // Don't send correctAnswer to AI - it will determine the correct answer
+    // Send correctAnswer to AI only if actively selected (A, B, C, or D)
+    // If empty/unselected, AI will determine the correct answer
     const partial: Partial<QuestionForm> = {
       questionText: form.questionText,
       categoryId: form.categoryId,
@@ -189,6 +193,9 @@ export function QuestionFormPage() {
       answerC: form.answerC,
       answerD: form.answerD,
     };
+    if (form.correctAnswer && ['A', 'B', 'C', 'D'].includes(form.correctAnswer)) {
+      partial.correctAnswer = form.correctAnswer;
+    }
     aiCompleteMutation.mutate(partial);
   };
 
@@ -213,7 +220,6 @@ export function QuestionFormPage() {
     if (!data.answerB) fields.push('answer B');
     if (!data.answerC) fields.push('answer C');
     if (!data.answerD) fields.push('answer D');
-    if (!data.correctAnswer) fields.push('correct answer');
     return fields;
   };
 
@@ -276,8 +282,9 @@ export function QuestionFormPage() {
             );
           })}
           <div className="form-group">
-            <label>Correct Answer *</label>
+            <label>Correct Answer</label>
             <select value={form.correctAnswer} onChange={set('correctAnswer')}>
+              <option value="">-- Select --</option>
               <option value="A">A</option>
               <option value="B">B</option>
               <option value="C">C</option>

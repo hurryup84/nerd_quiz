@@ -42,7 +42,7 @@ const empty: QuestionForm = {
   answerB: '',
   answerC: '',
   answerD: '',
-  correctAnswer: 'A',
+  correctAnswer: '',
 };
 
 export function SubmitQuestionPage() {
@@ -95,15 +95,21 @@ export function SubmitQuestionPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: ({ data, aiAssisted }: { data: QuestionForm; aiAssisted: boolean }) =>
-      api.post('/questions', {
+    mutationFn: ({ data, aiAssisted }: { data: QuestionForm; aiAssisted: boolean }) => {
+      const payload: Record<string, unknown> = {
         ...data,
         categoryId: data.categoryId === '' ? undefined : Number(data.categoryId),
         difficultyId:
           data.difficultyId === '' ? undefined : Number(data.difficultyId),
         info: data.info.trim() || undefined,
         aiAssisted,
-      }),
+      };
+      // Only send correctAnswer if it has a value (A, B, C, or D)
+      if (!data.correctAnswer || !['A', 'B', 'C', 'D'].includes(data.correctAnswer)) {
+        delete payload.correctAnswer;
+      }
+      return api.post('/questions', payload);
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['questions'] });
       navigate('/');
@@ -122,8 +128,7 @@ export function SubmitQuestionPage() {
            !data.answerA ||
            !data.answerB ||
            !data.answerC ||
-           !data.answerD ||
-           !data.correctAnswer;
+           !data.answerD;
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -140,7 +145,8 @@ export function SubmitQuestionPage() {
   };
 
   const handleAIConfirm = () => {
-    // Don't send correctAnswer to AI - it will determine the correct answer
+    // Send correctAnswer to AI only if actively selected (A, B, C, or D)
+    // If empty/unselected, AI will determine the correct answer
     const partial: Partial<QuestionForm> = {
       questionText: form.questionText,
       categoryId: form.categoryId,
@@ -151,6 +157,9 @@ export function SubmitQuestionPage() {
       answerC: form.answerC,
       answerD: form.answerD,
     };
+    if (form.correctAnswer && ['A', 'B', 'C', 'D'].includes(form.correctAnswer)) {
+      partial.correctAnswer = form.correctAnswer;
+    }
     aiCompleteMutation.mutate(partial);
   };
 
@@ -175,7 +184,6 @@ export function SubmitQuestionPage() {
     if (!data.answerB) fields.push('answer B');
     if (!data.answerC) fields.push('answer C');
     if (!data.answerD) fields.push('answer D');
-    if (!data.correctAnswer) fields.push('correct answer');
     return fields;
   };
 
@@ -240,8 +248,9 @@ export function SubmitQuestionPage() {
             );
           })}
           <div className="form-group">
-            <label>Correct Answer *</label>
+            <label>Correct Answer</label>
             <select value={form.correctAnswer} onChange={set('correctAnswer')}>
+              <option value="">-- Select --</option>
               <option value="A">A</option>
               <option value="B">B</option>
               <option value="C">C</option>
