@@ -19,6 +19,7 @@ import { TeamsPage } from './pages/TeamsPage';
 import { AdminTeamsPage } from './pages/AdminTeamsPage';
 import { AboutPage } from './pages/AboutPage';
 import { ImporterPage } from './pages/ImporterPage';
+import { ImporterListPage } from './pages/ImporterListPage';
 import { AdminPage } from './pages/AdminPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AdminAppPage } from './pages/AdminAppPage';
@@ -59,6 +60,7 @@ function App() {
               <Route index element={<Navigate to="/questions/create" replace />} />
               <Route path="create" element={<SubmitQuestionPage />} />
               <Route path="import" element={<ProtectedRoute importerOnly><ImporterPage /></ProtectedRoute>} />
+              <Route path="list" element={<ProtectedRoute importerOnly><ImporterListPage /></ProtectedRoute>} />
               <Route path="manage" element={<ProtectedRoute adminOnly><AdminQuestionsPage /></ProtectedRoute>} />
               <Route path="edit/:id" element={<ProtectedRoute adminOnly><QuestionFormPage /></ProtectedRoute>} />
               <Route path="meta" element={<ProtectedRoute adminOnly><AdminQuestionsMetaPage /></ProtectedRoute>} />

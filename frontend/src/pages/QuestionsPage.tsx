@@ -24,6 +24,9 @@ export function QuestionsPage() {
             <NavLink to="/questions/import" style={navLinkStyle}>
               Import
             </NavLink>
+            <NavLink to="/questions/list" style={navLinkStyle}>
+              List
+            </NavLink>
             {user?.role === 'ADMIN' && (
               <NavLink to="/questions/manage" style={navLinkStyle}>
                 Manage
