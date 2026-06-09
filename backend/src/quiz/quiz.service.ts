@@ -114,67 +114,40 @@ export class QuizService {
         ).map((e) => e.categoryId)
       : [];
 
-    const allQuestions = await this.prisma.question.findMany({
-      where:
-        excludedCategoryIds.length > 0
-          ? { categoryId: { notIn: excludedCategoryIds } }
-          : undefined,
-      select: { id: true, playCount: true },
-    });
-    if (allQuestions.length === 0) {
-      throw new BadRequestException(
-        teamId
-          ? 'No questions available to start a round (all categories may be excluded)'
-          : 'No questions available to start a round',
-      );
-    }
-
     const requestedQuestionCount = dto.questionCount ?? 4;
-    const questionCount = Math.min(requestedQuestionCount, allQuestions.length);
 
-    // Weighted random selection: less-played questions have higher probability
-    // Weight = 1 / (playCount + 1), so never-played questions get weight 1, once-played get 1/2, etc.
-    const weighted = allQuestions.map((q) => ({
-      question: q,
-      weight: 1 / (q.playCount + 1),
-    }));
-
-    // Select questions using weighted random selection (without replacement)
-    const selectedQuestions: { id: number; playCount: number }[] = [];
-    const remaining = [...weighted];
-    for (let i = 0; i < questionCount && remaining.length > 0; i++) {
-      // Calculate total weight of remaining questions
-      const totalWeight = remaining.reduce((sum, w) => sum + w.weight, 0);
-      // Pick a random point on the weight spectrum
-      let random = Math.random() * totalWeight;
-      // Find which question corresponds to that point
-      let selected = remaining[0];
-      for (const item of remaining) {
-        random -= item.weight;
-        if (random <= 0) {
-          selected = item;
-          break;
-        }
-      }
-      selectedQuestions.push({
-        id: selected.question.id,
-        playCount: selected.question.playCount,
-      });
-      // Remove selected item (no replacement)
-      const idx = remaining.findIndex(
-        (r) => r.question.id === selected.question.id,
-      );
-      remaining.splice(idx, 1);
-    }
-    const selectedIds = selectedQuestions.map((q) => q.id);
-
-    let timeoutAt: Date | undefined;
-    if (dto.timeoutMinutes) {
-      timeoutAt = new Date(Date.now() + dto.timeoutMinutes * 60 * 1000);
-    }
-
-    // Use transaction to create round and update play counts atomically
+    // Optimized: Single query to select questions from smallest normalizedPlayCount groups
+    // Orders by normalizedPlayCount (smallest first) then randomly within each group
     return this.prisma.$transaction(async (tx) => {
+      // Single query: get questions ordered by normalizedPlayCount then randomly
+      // This ensures we always pick from smallest normalizedPlayCount groups first
+      // SQLite uses RANDOM() for random ordering
+      const questions = await tx.$queryRaw<{ id: number }[]>`
+        SELECT id
+        FROM "Question"
+        ${
+          excludedCategoryIds.length > 0
+            ? Prisma.sql`WHERE "categoryId" NOT IN (${Prisma.join(excludedCategoryIds)})`
+            : Prisma.sql`WHERE 1 = 1`
+        }
+        ORDER BY "normalizedPlayCount" ASC, RANDOM()
+        LIMIT ${requestedQuestionCount}
+      `;
+
+      if (questions.length === 0) {
+        throw new BadRequestException(
+          teamId
+            ? 'No questions available to start a round (all categories may be excluded)'
+            : 'No questions available to start a round',
+        );
+      }
+
+      const selectedIds = questions.map((q) => q.id);
+      let timeoutAt: Date | undefined;
+      if (dto.timeoutMinutes) {
+        timeoutAt = new Date(Date.now() + dto.timeoutMinutes * 60 * 1000);
+      }
+
       const round = await tx.quizRound.create({
         data: {
           requiredParticipants: dto.requiredParticipants,
@@ -200,10 +173,13 @@ export class QuizService {
         },
       });
 
-      // Increment playCount for selected questions
+      // Increment both playCount (for statistics) and normalizedPlayCount (for selection)
       await tx.question.updateMany({
         where: { id: { in: selectedIds } },
-        data: { playCount: { increment: 1 } },
+        data: {
+          playCount: { increment: 1 },
+          normalizedPlayCount: { increment: 1 },
+        },
       });
 
       return round;

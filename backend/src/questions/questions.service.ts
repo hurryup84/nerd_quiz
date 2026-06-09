@@ -86,6 +86,15 @@ export class QuestionsService {
         throw new BadRequestException('Creator user does not exist');
     }
 
+    // Get the minimum normalizedPlayCount across all questions to set for the new question
+    // This ensures new questions start with the same "effective play count" as existing ones
+    const minNormalized = await this.prisma.question.findFirst({
+      select: { normalizedPlayCount: true },
+      orderBy: { normalizedPlayCount: 'asc' },
+    });
+    // The type will be updated after prisma generate, for now cast
+    const normalizedPlayCount = (minNormalized as { normalizedPlayCount?: number })?.normalizedPlayCount ?? 0;
+
     return this.prisma.question.create({
       data: {
         questionId,
@@ -100,6 +109,7 @@ export class QuestionsService {
         difficultyId: dto.difficultyId,
         creatorId: dto.creatorId,
         aiAssisted: dto.aiAssisted ?? false,
+        normalizedPlayCount,
       },
       include: { category: true, difficulty: true, creator: true },
     });
@@ -341,6 +351,13 @@ export class QuestionsService {
           },
         });
       } else {
+        // New question: get min normalizedPlayCount to ensure fair selection
+        const minNorm = await this.prisma.question.findFirst({
+          select: { normalizedPlayCount: true },
+          orderBy: { normalizedPlayCount: 'asc' },
+        });
+        const normPlayCount = (minNorm as { normalizedPlayCount?: number })?.normalizedPlayCount ?? 0;
+
         await this.prisma.question.create({
           data: {
             questionId: questionIdToUse,
@@ -355,6 +372,7 @@ export class QuestionsService {
             info: this.normalizeOptionalString(info ?? undefined),
             creatorId: importerId,
             aiAssisted: false,
+            normalizedPlayCount: normPlayCount,
           },
         });
       }

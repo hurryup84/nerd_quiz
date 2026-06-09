@@ -26,31 +26,33 @@ model User {
 }
 
 model Question {
-  id            Int             @id @default(autoincrement())
-  questionId    String          @unique
-  questionText  String
-  categoryId    Int?
-  difficultyId  Int?
-  info          String?
-  answerA       String
-  answerB       String
-  answerC       String
-  answerD       String
+  id                  Int             @id @default(autoincrement())
+  questionId          String          @unique
+  questionText        String
+  categoryId          Int?
+  difficultyId      Int?
+  info                String?
+  answerA             String
+  answerB             String
+  answerC             String
+  answerD             String
   correctAnswer String
-  playCount     Int             @default(0)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  creatorId     Int?
-  aiAssisted    Boolean         @default(false)
-  category      Category?       @relation(fields: [categoryId], references: [id])
-  difficulty    Difficulty?     @relation(fields: [difficultyId], references: [id])
-  creator         User?           @relation("QuestionCreator", fields: [creatorId], references: [id])
-  roundQuestions RoundQuestion[]
+  playCount           Int             @default(0)
+  normalizedPlayCount Int             @default(0)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  creatorId           Int?
+  aiAssisted          Boolean         @default(false)
+  category            Category?       @relation(fields: [categoryId], references: [id])
+  difficulty          Difficulty?     @relation(fields: [difficultyId], references: [id])
+  creator             User?           @relation("QuestionCreator", fields: [creatorId], references: [id])
+  roundQuestions      RoundQuestion[]
 
   @@index([questionId])
   @@index([categoryId])
   @@index([difficultyId])
   @@index([playCount])
+  @@index([normalizedPlayCount])
   @@index([creatorId])
 }
 
