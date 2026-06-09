@@ -171,6 +171,19 @@ export class QuestionsService {
     return this.prisma.question.count();
   }
 
+  async findLatest() {
+    return this.prisma.question.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        questionId: true,
+        questionText: true,
+        createdAt: true,
+        creator: { select: { username: true } },
+      },
+    });
+  }
+
   async findOne(id: number) {
     const q = await this.prisma.question.findUnique({
       where: { id },

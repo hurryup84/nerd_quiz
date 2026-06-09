@@ -3,6 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 
+interface LatestQuestion {
+  id: number;
+  questionId: string;
+  questionText: string;
+  createdAt: string;
+  creator?: { username: string } | null;
+}
+
 interface Answer {
   id: number;
   selectedAnswer: string;
@@ -72,6 +80,13 @@ export function DashboardPage() {
     queryKey: ['questions', 'count'],
     queryFn: () => api.get<{ total: number }>('/questions/count'),
     retry: 3,
+    staleTime: 1000 * 60,
+  });
+
+  const { data: latestQuestion } = useQuery<LatestQuestion | null>({
+    queryKey: ['questions', 'latest'],
+    queryFn: () => api.get<LatestQuestion | null>('/questions/latest'),
+    enabled: user?.role === 'ADMIN',
     staleTime: 1000 * 60,
   });
 
@@ -172,6 +187,23 @@ export function DashboardPage() {
               {countLoading ? '…' : questionCountData?.total ?? '…'}
             </p>
           </div>
+
+          {user?.role === 'ADMIN' && latestQuestion && (
+            <div className="card" style={{ marginTop: '1rem' }}>
+              <h3>📝 Latest Question</h3>
+              <p style={{ marginBottom: '0.25rem' }}>
+                <code>{latestQuestion.questionId}</code> — {latestQuestion.questionText.substring(0, 60)}...
+              </p>
+              {latestQuestion.creator?.username && (
+                <p className="muted" style={{ marginBottom: '0.25rem' }}>
+                  Created by: {latestQuestion.creator.username}
+                </p>
+              )}
+              <p className="muted" style={{ fontSize: '0.8rem' }}>
+                Created: {new Date(latestQuestion.createdAt).toLocaleString()}
+              </p>
+            </div>
+          )}
 
           {lastRound && (
             <div className="last-round">

@@ -23,6 +23,8 @@ interface Question {
   answerC: string;
   answerD: string;
   correctAnswer: string;
+  creator?: { id: number; username: string } | null;
+  createdAt: string;
 }
 
 interface RoundQuestion {
@@ -205,6 +207,9 @@ export function QuizActivePage() {
                   )}
                   {question.difficulty?.name && (
                     <span className="muted"> | Difficulty: {question.difficulty.name}</span>
+                  )}
+                  {question.creator?.username && (
+                    <span className="muted"> | Created by: {question.creator.username}</span>
                   )}
                 </p>
                 <div className="result-options">

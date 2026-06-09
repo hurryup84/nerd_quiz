@@ -64,6 +64,12 @@ export class QuestionsController {
   }
 
   @UseGuards(AdminGuard)
+  @Get('latest')
+  async findLatest() {
+    return this.questionsService.findLatest();
+  }
+
+  @UseGuards(AdminGuard)
   @Post('categories')
   createCategory(@Body() dto: CreateNamedMetaDto) {
     return this.questionsService.createCategory(dto.name);
