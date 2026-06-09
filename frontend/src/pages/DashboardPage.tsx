@@ -208,7 +208,7 @@ export function DashboardPage() {
             <div className="card" style={{ marginTop: '1rem', textAlign: 'center' }}>
               <h3>📝 Latest Question</h3>
               <p style={{ marginBottom: '0.25rem' }}>
-                <code>{latestQuestion.questionId}</code> — {latestQuestion.questionText.substring(0, 60)}...
+                <code>{latestQuestion.questionId}</code> — {latestQuestion.questionText}
               </p>
               {latestQuestion.creator?.username && (
                 <p className="muted" style={{ marginBottom: '0.25rem' }}>
