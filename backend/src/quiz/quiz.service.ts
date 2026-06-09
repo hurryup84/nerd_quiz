@@ -81,7 +81,7 @@ export class QuizService {
 
   async getActiveRoundsForUser(userId: number) {
     const teamIds = await this.getMyTeamIds(userId);
-    return this.prisma.quizRound.findMany({
+    const rounds = await this.prisma.quizRound.findMany({
       where: {
         status: 'ACTIVE',
         OR: [{ teamId: null }, { teamId: { in: teamIds } }],
@@ -89,6 +89,27 @@ export class QuizService {
       include: roundDetailInclude,
       orderBy: { createdAt: 'desc' },
     });
+
+    // Add team members for team rounds
+    return Promise.all(
+      rounds.map(async (round) => {
+        if (round.teamId) {
+          const team = await this.prisma.team.findUnique({
+            where: { id: round.teamId },
+            include: {
+              members: {
+                include: { user: { select: { id: true, username: true } } },
+              },
+            },
+          });
+          return {
+            ...round,
+            teamMembers: team?.members?.map((m) => m.user) ?? [],
+          };
+        }
+        return round;
+      }),
+    );
   }
 
   async createRound(userId: number, dto: CreateRoundDto) {

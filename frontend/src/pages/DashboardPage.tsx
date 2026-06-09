@@ -43,6 +43,7 @@ interface QuizRound {
   createdBy: { id: number; username: string };
   finishedAt?: string;
   team?: { id: string; name: string } | null;
+  teamMembers?: { id: number; username: string }[];
 }
 
 function teamLabel(round: QuizRound): string {
@@ -158,6 +159,15 @@ export function DashboardPage() {
                       {f.user.username} (Done)
                     </span>
                   ))}
+                  {activeRound.team?.id && activeRound.teamMembers && (
+                    activeRound.teamMembers
+                      .filter((m) => !(activeRound.finalizations ?? []).some((f) => f.user.id === m.id))
+                      .map((m) => (
+                        <span key={m.id} className="badge badge-participant-pending" >
+                          {m.username} (Pending)
+                        </span>
+                      ))
+                  )}
                 </div>
 
                 <div style={{ marginTop: '1rem' }}>
