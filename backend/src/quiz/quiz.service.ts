@@ -79,6 +79,20 @@ export class QuizService {
     });
   }
 
+  async getStatsForUser() {
+    const rounds = await this.prisma.quizRound.findMany({
+      where: {
+        status: 'FINISHED',
+      },
+      select: {
+        questions: { select: { id: true } },
+      },
+    });
+    const totalRounds = rounds.length;
+    const totalQuestionsPlayed = rounds.reduce((sum, r) => sum + r.questions.length, 0);
+    return { totalRounds, totalQuestionsPlayed };
+  }
+
   async getActiveRoundsForUser(userId: number) {
     const teamIds = await this.getMyTeamIds(userId);
     const rounds = await this.prisma.quizRound.findMany({

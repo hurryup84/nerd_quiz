@@ -91,6 +91,12 @@ export function DashboardPage() {
     staleTime: 1000 * 60,
   });
 
+  const { data: stats } = useQuery<{ totalRounds: number; totalQuestionsPlayed: number }>({
+    queryKey: ['quiz', 'stats'],
+    queryFn: () => api.get('/quiz/stats'),
+    staleTime: 1000 * 60,
+  });
+
   if (activeLoading) return <div className="loading">Loading…</div>;
 
   return (
@@ -199,20 +205,30 @@ export function DashboardPage() {
           </div>
 
           {user?.role === 'ADMIN' && latestQuestion && (
-            <div className="card" style={{ marginTop: '1rem' }}>
+            <div className="card" style={{ marginTop: '1rem', textAlign: 'center' }}>
               <h3>📝 Latest Question</h3>
               <p style={{ marginBottom: '0.25rem' }}>
                 <code>{latestQuestion.questionId}</code> — {latestQuestion.questionText.substring(0, 60)}...
               </p>
               {latestQuestion.creator?.username && (
                 <p className="muted" style={{ marginBottom: '0.25rem' }}>
-                  Created by: {latestQuestion.creator.username}
+                  Created by: {latestQuestion.creator.username} <>&nbsp;</><>&nbsp;</><>&nbsp;</>
+                  Created: {new Date(latestQuestion.createdAt).toLocaleString()}
                 </p>
               )}
-              <p className="muted" style={{ fontSize: '0.8rem' }}>
-                Created: {new Date(latestQuestion.createdAt).toLocaleString()}
-              </p>
+
             </div>
+          )}
+
+          {user?.role === 'ADMIN' && latestQuestion && (
+          <div className="card" style={{ marginTop: '1rem', textAlign: 'center' }}>
+            <h3>📊 Quiz Stats</h3>
+            <p style={{ margin: '0.25rem 0' }}>
+              <strong>{stats?.totalRounds ?? 0}</strong> completed round{stats?.totalRounds !== 1 ? 's' : ''}
+            <>&nbsp;</><>&nbsp;</><>&nbsp;</>
+              <strong>{stats?.totalQuestionsPlayed ?? 0}</strong> questions played
+            </p>
+          </div>
           )}
 
           {lastRound && (

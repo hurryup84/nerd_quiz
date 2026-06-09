@@ -25,6 +25,11 @@ export class QuizController {
     return this.quizService.getActiveRoundsForUser(req.user.id);
   }
 
+  @Get('stats')
+  getStats(@Request() req: { user: { id: number } }) {
+    return this.quizService.getStatsForUser();
+  }
+
   @Get('last')
   getLast(@Request() req: { user: { id: number } }) {
     return this.quizService.getLastFinishedRound(req.user.id);
