@@ -115,8 +115,29 @@ export function AboutPage() {
               nerdyquiz@proton.me
             </a>
           </p>
+          </div>
+          <div className="about-section">
+          <h3>☕ Support</h3>
+          <p>
+            If you like playing Nerdy Quiz, consider buying me a coffee to help build more nice things! ☕{' '}
+            <a href="https://buymeacoffee.com/hurryup" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+              https://buymeacoffee.com/hurryup
+            </a>
+          </p>
+          <p>
+            Check out my other project, OnePlace, an app for your personal outdoor adventures:
+            {' '}
+            <a href="https://play.google.com/store/apps/details?id=com.moidev.oneplace" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+              Android
+            </a>
+            {' | '}
+            <a href="https://apps.apple.com/de/app/id6762458802" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+              iOS
+            </a>
+          </p>
+          </div>
         </div>
       </div>
-    </div>
+
   );
 }
