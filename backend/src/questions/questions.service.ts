@@ -5,6 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateQuestionDto } from './dto/create-question.dto';
 
 @Injectable()
@@ -122,8 +123,32 @@ export class QuestionsService {
     });
   }
 
-  async search(query: string) {
+  async search(query: string, playCountFilter?: string) {
     const searchTerm = query.trim();
+
+    // Build playCount filter conditions
+    let playCountWhere: Prisma.IntFilter | undefined;
+    if (playCountFilter) {
+      if (playCountFilter === '0') {
+        playCountWhere = { equals: 0 };
+      } else if (playCountFilter === '1-10') {
+        playCountWhere = { gte: 1, lte: 10 };
+      } else if (playCountFilter === '11-50') {
+        playCountWhere = { gte: 11, lte: 50 };
+      } else if (playCountFilter === '50+') {
+        playCountWhere = { gt: 50 };
+      }
+    }
+
+    // If no search term but has filter, return filtered results
+    if (!searchTerm && playCountWhere) {
+      return this.prisma.question.findMany({
+        where: { playCount: playCountWhere },
+        orderBy: { id: 'asc' },
+        include: { category: true, difficulty: true, creator: true },
+      });
+    }
+
     if (!searchTerm) return this.findAll();
 
     return this.prisma.question.findMany({
@@ -135,6 +160,7 @@ export class QuestionsService {
           { answerC: { contains: searchTerm } },
           { answerD: { contains: searchTerm } },
         ],
+        ...(playCountWhere && { playCount: playCountWhere }),
       },
       orderBy: { id: 'asc' },
       include: { category: true, difficulty: true, creator: true },

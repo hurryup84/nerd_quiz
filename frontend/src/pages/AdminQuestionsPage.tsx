@@ -38,10 +38,17 @@ export function AdminQuestionsPage() {
 
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [playCountFilter, setPlayCountFilter] = useState<string>('all');
 
   const { data: questions = [], isLoading: questionsLoading } = useQuery<Question[]>({
-    queryKey: ['questions', searchQuery],
-    queryFn: () => api.get<Question[]>(`/questions${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`),
+    queryKey: ['questions', searchQuery, playCountFilter],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('q', searchQuery);
+      if (playCountFilter !== 'all') params.set('playCount', playCountFilter);
+      const qs = params.toString();
+      return api.get<Question[]>(`/questions${qs ? `?${qs}` : ''}`);
+    },
     staleTime: 1000 * 60 * 5,
   });
 
@@ -111,7 +118,18 @@ export function AdminQuestionsPage() {
       <div className="card">
         <div className="card-header">
           <h2>Question Management</h2>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <select
+              value={playCountFilter}
+              onChange={(e) => setPlayCountFilter(e.target.value)}
+              style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+            >
+              <option value="all">All Play Counts</option>
+              <option value="0">Never Played</option>
+              <option value="1-10">1-10 plays</option>
+              <option value="11-50">11-50 plays</option>
+              <option value="50+">50+ plays</option>
+            </select>
             <input
               ref={searchInputRef}
               type="text"
@@ -138,7 +156,8 @@ export function AdminQuestionsPage() {
         {questions.length === 0 ? (
           <p>No questions yet. Add your first question!</p>
         ) : (
-          <table className="results-table">
+          <div className="table-container">
+            <table className="results-table">
             <thead>
               <tr>
                 <th>ID</th>
@@ -184,7 +203,8 @@ export function AdminQuestionsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
       </div>
     </div>

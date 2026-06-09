@@ -46,9 +46,12 @@ export class QuestionsController {
   }
 
   @Get()
-  findAll(@Query('q') q?: string) {
-    if (q) {
-      return this.questionsService.search(q);
+  findAll(
+    @Query('q') q?: string,
+    @Query('playCount') playCount?: string,
+  ) {
+    if (q || playCount) {
+      return this.questionsService.search(q ?? '', playCount);
     }
     return this.questionsService.findAll();
   }
