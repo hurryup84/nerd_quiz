@@ -269,6 +269,7 @@ h1, h2, h3, h4 {
 .correct-answer { border: 1px solid var(--success); padding: 0.75rem 1rem; margin-bottom: 1rem; }
 
 /* Table */
+.table-container { overflow-x: auto; }
 .results-table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
 .results-table th, .results-table td { padding: 0.6rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
 .results-table th { color: var(--accent); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid var(--primary); }
@@ -382,11 +383,8 @@ h1, h2, h3, h4 {
   .answer-btn { padding: 1rem; font-size: 0.95rem; }
 
   /* Tables - make scrollable horizontally */
-  .results-table {
-    font-size: 0.85rem;
-    display: block;
+  .table-container {
     overflow-x: auto;
-    white-space: nowrap;
   }
   .results-table th,
   .results-table td { padding: 0.5rem 0.6rem; }
