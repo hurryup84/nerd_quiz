@@ -49,6 +49,7 @@ interface QuizRound {
   finishedAt?: string;
   createdBy?: { id: number; username: string };
   team?: { id: string; name: string } | null;
+  teamMembers?: { id: number; username: string }[];
 }
 
 export function QuizActivePage() {
@@ -193,6 +194,26 @@ export function QuizActivePage() {
                 </table>
               </>
             )}
+
+            {/* Show missing team members for team rounds */}
+            {round.team?.id && round.teamMembers && (
+              <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+                <h4 style={{ marginBottom: '0.5rem' }}>Missing Participants</h4>
+                {round.teamMembers && round.teamMembers.length > participantScores.length ? (
+                  <div className="participants-list">
+                    {round.teamMembers
+                      .filter((member) => !participantScores.some((p) => p.id === member.id))
+                      .map((member) => (
+                        <span key={member.id} className="badge" style={{ opacity: 0.5 }}>
+                          {member.username}
+                        </span>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="muted">All team members have participated.</p>
+                )}
+              </div>
+            )}
           </div>
 
           {round.questions.map((rq, idx) => {
@@ -259,6 +280,14 @@ export function QuizActivePage() {
     }
 
     if (isFinalized) {
+      // Get finalized user IDs
+      const finalizedUserIds = new Set(round.finalizations?.map((f) => f.user.id) ?? []);
+
+      // For team rounds, compute missing members
+      const missingMembers = round.teamMembers?.filter(
+        (member) => !finalizedUserIds.has(member.id)
+      ) ?? [];
+
       return (
         <div className="my-answer">
           <p>✅ <strong>You have finalized your answers.</strong></p>
@@ -281,6 +310,11 @@ export function QuizActivePage() {
             {round.finalizations?.map((f) => (
               <span key={f.user.id} className="badge badge-participant">
                 {f.user.username} (Done)
+              </span>
+            ))}
+            {missingMembers.map((member) => (
+              <span key={member.id} className="badge" style={{ opacity: 0.5 }}>
+                {member.username} (Pending)
               </span>
             ))}
           </div>

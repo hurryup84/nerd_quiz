@@ -297,6 +297,23 @@ export class QuizService {
     });
     if (!round) throw new NotFoundException('Round not found');
     await this.assertCanViewRound(round, user);
+
+    // Add team members for team rounds (to show missing participants)
+    if (round.teamId) {
+      const team = await this.prisma.team.findUnique({
+        where: { id: round.teamId },
+        include: {
+          members: {
+            include: { user: { select: { id: true, username: true } } },
+          },
+        },
+      });
+      return {
+        ...round,
+        teamMembers: team?.members?.map((m) => m.user) ?? [],
+      };
+    }
+
     return round;
   }
 
