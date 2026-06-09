@@ -24,6 +24,8 @@ interface Question {
   info?: string | null;
   correctAnswer: string;
   createdAt: string;
+  playCount: number;
+  creator?: { id: number; username: string } | null;
 }
 
 
@@ -142,6 +144,9 @@ export function AdminQuestionsPage() {
                 <th>ID</th>
                 <th>Question</th>
                 <th>Category</th>
+                <th>Difficulty</th>
+                <th>Play Count</th>
+                <th>Author</th>
                 <th>Answer</th>
                 <th>Actions</th>
               </tr>
@@ -154,6 +159,9 @@ export function AdminQuestionsPage() {
                   </td>
                   <td>{q.questionText}</td>
                   <td>{q.category?.name ?? '—'}</td>
+                  <td>{q.difficulty?.name ?? '—'}</td>
+                  <td>{q.playCount}</td>
+                  <td>{q.creator?.username ?? '—'}</td>
                   <td>{q.correctAnswer}</td>
                   <td>
                     <Link
