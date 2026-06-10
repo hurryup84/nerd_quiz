@@ -32,7 +32,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="app">
       <nav className="navbar">
-        <Link to="/" className="nav-brand" onClick={() => setMobileMenuOpen(false)}>🧠 Nerd Quiz</Link>
+        <Link to="/" className="nav-brand" onClick={() => setMobileMenuOpen(false)}>🧠 Nerdy Quiz</Link>
         <button
           className="mobile-menu-toggle"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

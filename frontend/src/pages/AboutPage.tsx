@@ -2,12 +2,12 @@ export function AboutPage() {
   return (
     <div className="page">
       <div className="card">
-        <h2>About Nerd Quiz</h2>
+        <h2>About Nerdy Quiz</h2>
 
         <div className="about-section">
           <h3>🎮 How the Game Works</h3>
           <p>
-            Nerd Quiz is a multiplayer quiz game where participants answer multiple-choice questions.
+            Nerdy Quiz is a multiplayer quiz game where participants answer multiple-choice questions.
             A quiz round consists of several questions that all players answer simultaneously.
             After everyone finalizes their answers, the results are revealed showing who got the most correct.
           </p>

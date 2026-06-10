@@ -36,7 +36,7 @@ export function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>🧠 Nerd Quiz</h1>
+        <h1>🧠 Nerdy Quiz</h1>
         <h2>Register</h2>
         {error && <div className="alert alert-error">{error}</div>}
         <form onSubmit={handleSubmit}>

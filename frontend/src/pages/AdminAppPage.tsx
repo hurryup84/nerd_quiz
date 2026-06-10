@@ -130,8 +130,8 @@ export function AdminAppPage() {
             onChange={(e) => themeMutation.mutate(e.target.value)}
             disabled={themeMutation.isPending}
           >
-            <option value="terminal">Nerd Terminal (Matrix)</option>
-            <option value="classic">Quiz Classic (Phase 1)</option>
+            <option value="terminal">Nerdy Terminal (Matrix)</option>
+            <option value="classic">Nerdy Quiz Classic (Phase 1)</option>
           </select>
 
           <span style={{ marginLeft: '1.5rem' }}>Poll interval:</span>
