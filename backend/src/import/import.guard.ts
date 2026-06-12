@@ -7,8 +7,9 @@ export class ImporterGuard implements CanActivate {
     const request = context
       .switchToHttp()
       .getRequest<{ user?: { role?: string } }>();
-    if (request.user?.role !== 'ADMIN' && request.user?.role !== 'IMPORTER') {
-      throw new ForbiddenException('Importer role required');
+    // Check if user exists and has admin or importer role
+    if (!request.user || (request.user.role !== 'ADMIN' && request.user.role !== 'IMPORTER')) {
+      throw new ForbiddenException('Importer or Admin role required');
     }
     return true;
   }

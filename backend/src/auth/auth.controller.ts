@@ -99,15 +99,6 @@ export class AuthController {
     return req.user;
   }
 
-  @Get('debug-cookie')
-  @HttpCode(200)
-  debugCookie(@Request() req: { cookies?: Record<string, string> }) {
-    return {
-      hasToken: !!req.cookies?.token,
-      cookieNames: req.cookies ? Object.keys(req.cookies) : [],
-    };
-  }
-
   @UseGuards(JwtAuthGuard)
   @Put('password')
   async changePassword(
