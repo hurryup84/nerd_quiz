@@ -12,6 +12,7 @@ interface HistoryRound {
   id: number;
   status: string;
   createdAt: string;
+  createdBy?: { id: number; username: string } | null;
   team?: { id: string; name: string } | null;
   questions: { question: { questionId: string; questionText: string } }[];
   _count: { finalizations: number };
@@ -52,11 +53,13 @@ export function HistoryPage() {
             setPage(1);
           }}
         />
-        <table className="results-table">
-          <thead>
+        <div className="table-container">
+          <table className="results-table">
+            <thead>
             <tr>
               <th>Date</th>
               <th>Team</th>
+              <th>Created by</th>
               <th>Topic / First Q</th>
               <th>Questions</th>
               <th>Participants</th>
@@ -69,6 +72,7 @@ export function HistoryPage() {
               <tr key={r.id}>
                 <td>{new Date(r.createdAt).toLocaleDateString()}</td>
                 <td>{r.team?.name ?? 'Global'}</td>
+                <td>{r.createdBy?.username ?? '—'}</td>
                 <td>
                   {r.status === 'FINISHED' ? (
                     <Link to={`/quiz/${r.id}`}>
@@ -96,6 +100,7 @@ export function HistoryPage() {
             ))}
           </tbody>
         </table>
+        </div>
         <div className="pagination">
           <button
             className="btn btn-sm"

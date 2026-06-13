@@ -427,6 +427,7 @@ export class QuizService {
               question: { select: { questionText: true, questionId: true } },
             },
           },
+          createdBy: { select: { id: true, username: true } },
           team: { select: { id: true, name: true } },
           _count: { select: { finalizations: true } },
         },

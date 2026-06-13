@@ -261,6 +261,7 @@ export function QuizActivePage() {
               <div key={rq.id} className="result-question">
                 <p className="result-question-text">
                   <strong>Q{idx + 1}:</strong> {question.questionText}
+                  <span className="muted"> | ID: {question.questionId}</span>
                   {question.category?.name && (
                     <span className="muted"> | Category: {question.category.name}</span>
                   )}
