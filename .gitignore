@@ -8,3 +8,4 @@ backend/dev.db
 coverage/
 .claude/*
 .vscode/*
+*.csv
