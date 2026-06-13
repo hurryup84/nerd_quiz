@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -9,6 +9,15 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Retain focus on inputs during re-renders
+  const focusedInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (focusedInputRef.current) {
+      focusedInputRef.current.focus();
+    }
+  });
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -35,6 +44,7 @@ export function LoginPage() {
             <label>Username</label>
             <input
               value={username}
+              onFocus={(e) => { focusedInputRef.current = e.target; }}
               onChange={(e) => setUsername(e.target.value)}
               required
               autoFocus
@@ -45,6 +55,7 @@ export function LoginPage() {
             <input
               type="password"
               value={password}
+              onFocus={(e) => { focusedInputRef.current = e.target; }}
               onChange={(e) => setPassword(e.target.value)}
               required
             />

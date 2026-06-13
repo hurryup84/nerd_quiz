@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,6 +12,15 @@ export function ChangePasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Retain focus on password fields during re-renders
+  const focusedInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (focusedInputRef.current) {
+      focusedInputRef.current.focus();
+    }
+  });
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -52,6 +61,7 @@ export function ChangePasswordPage() {
             <input
               type="password"
               value={currentPassword}
+              onFocus={(e) => { focusedInputRef.current = e.target; }}
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
             />
@@ -61,6 +71,7 @@ export function ChangePasswordPage() {
             <input
               type="password"
               value={newPassword}
+              onFocus={(e) => { focusedInputRef.current = e.target; }}
               onChange={(e) => setNewPassword(e.target.value)}
               required
             />
@@ -70,6 +81,7 @@ export function ChangePasswordPage() {
             <input
               type="password"
               value={confirm}
+              onFocus={(e) => { focusedInputRef.current = e.target; }}
               onChange={(e) => setConfirm(e.target.value)}
               required
             />
