@@ -10,7 +10,7 @@ import { Reflector } from '@nestjs/core';
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  canActivate(context: ExecutionContext): boolean | Promise<boolean> {
     const requiredRoles = this.reflector.get<string[]>(
       'roles',
       context.getHandler(),
