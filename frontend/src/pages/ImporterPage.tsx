@@ -48,13 +48,14 @@ export function ImporterPage() {
     const form = new FormData();
     form.append('file', file);
 
-    // Progress timer - increments once per second
+    // Progress timer - increments every second, shows "Importing..." during processing
+    let timeElapsed = 0;
     const progressInterval = setInterval(() => {
-      setImportProgress((prev) => {
-        const max = questionCount || 0;
-        return Math.min(prev + 1, max);
-      });
+      timeElapsed++;
+      setImportProgress(Math.min(timeElapsed, estimatedCount));
     }, 1000);
+    // Set initial progress to 1 immediately for small imports
+    setImportProgress(1);
 
     try {
       const res = await fetch(`${API_BASE}/questions/import/csv`, {
