@@ -22,7 +22,8 @@ export function ImporterPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [isImporting, setIsImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState<{ total: number; imported?: number } | null>(null);
+  const [questionCount, setQuestionCount] = useState<number>(0);
+  const [importProgress, setImportProgress] = useState(0);
 
   const { data: meta } = useQuery<QuestionsMeta>({
     queryKey: ['questions', 'meta'],
@@ -36,28 +37,24 @@ export function ImporterPage() {
     if (!file) return;
     setError('');
     setIsImporting(true);
-    setImportProgress(null);
+    setImportProgress(0);
 
-    // Estimate total lines for progress indication
+    // Count questions for time estimation (1 sec per question)
     const text = await file.text();
     const lines = text.split(/\r?\n/).filter((l) => l.trim());
-    const totalLines = lines.length > 0 ? lines.length - 1 : 0; // Subtract header
-    setImportProgress({ total: totalLines, imported: 0 });
+    const estimatedCount = Math.max(0, lines.length - 1); // Subtract header
+    setQuestionCount(estimatedCount);
 
     const form = new FormData();
     form.append('file', file);
 
-    // Simulate progress while import is processing
+    // Progress timer - increments once per second
     const progressInterval = setInterval(() => {
       setImportProgress((prev) => {
-        if (!prev || prev.imported === undefined) return prev;
-        // Gradually increase progress up to 90% until we get the real result
-        if (prev.imported < prev.total * 0.9) {
-          return { ...prev, imported: Math.min(prev.imported + 1, Math.floor(prev.total * 0.9)) };
-        }
-        return prev;
+        const max = questionCount || 0;
+        return Math.min(prev + 1, max);
       });
-    }, 100);
+    }, 1000);
 
     try {
       const res = await fetch(`${API_BASE}/questions/import/csv`, {
@@ -74,8 +71,7 @@ export function ImporterPage() {
         setError(msg ?? `${res.status} ${res.statusText}`);
       } else {
         const data = await readJsonSafe<{ imported?: number }>(res);
-        // Set progress to 100% immediately
-        setImportProgress({ total: totalLines, imported: data?.imported ?? totalLines });
+        setImportProgress(data?.imported ?? questionCount ?? 0);
         alert(`Imported ${data?.imported ?? 0} question(s).`);
       }
     } catch (networkError) {
@@ -110,13 +106,15 @@ export function ImporterPage() {
         {isImporting && (
           <div style={{ padding: '1rem' }}>
             <div className="progress-bar-label">
-              Importing questions... {importProgress?.imported ?? 0} of {importProgress?.total ?? 0}
+              {questionCount > 0
+                ? `Imported ${importProgress} of ${questionCount} question${questionCount !== 1 ? 's' : ''}...`
+                : 'Starting import...'}
             </div>
             <div className="progress-bar">
               <div
                 className="progress-fill"
                 style={{
-                  width: importProgress?.total ? `${((importProgress.imported ?? 0) / importProgress.total) * 100}%` : '100%',
+                  width: questionCount ? `${(importProgress / questionCount) * 100}%` : '100%',
                 }}
               />
             </div>
