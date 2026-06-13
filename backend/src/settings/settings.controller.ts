@@ -37,7 +37,8 @@ export class SettingsController {
   @Put('openrouterApiKey')
   async setOpenrouterApiKey(@Body('openrouterApiKey') apiKey: string) {
     await this.settingsService.set('openrouterApiKey', apiKey);
-    return { openrouterApiKey: apiKey };
+    // Don't echo back the API key - return only confirmation
+    return { openrouterApiKeySet: true };
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)

@@ -28,6 +28,8 @@ import { AdminGuard } from '../admin/admin.guard';
 import { ImporterGuard } from '../import/import.guard';
 import { SettingsService } from '../settings/settings.service';
 
+// Debug logging removed for security - never log potentially sensitive request data
+
 class CreateNamedMetaDto {
   @IsString() name!: string;
 }
@@ -145,10 +147,6 @@ export class QuestionsController {
       this.settingsService.get('openrouterModel'),
     ]);
 
-    console.log('[OpenRouter] Request to complete question:', JSON.stringify(partial));
-    console.log('[OpenRouter] Using endpoint:', endpoint);
-    console.log('[OpenRouter] Using model:', model);
-
     if (!apiKey) {
       throw new BadRequestException('OpenRouter API key not configured');
     }
@@ -157,8 +155,6 @@ export class QuestionsController {
     const explicitPrompt = `Complete the following quiz question JSON. Fill in any missing fields including answers and correct answer. Return only valid JSON with these fields: questionText (string), category (string), difficulty (string), info (string), answerA (string), answerB (string), answerC (string), answerD (string), correctAnswer (A/B/C/D). Question JSON: ${JSON.stringify(partial)}`;
 
     const prompt = `${promptTemplate}${explicitPrompt}`;
-
-    console.log('[OpenRouter] Prompt:', prompt);
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -175,32 +171,26 @@ export class QuestionsController {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.log('[OpenRouter] API error response:', errorText);
       throw new BadRequestException(`OpenRouter API error: ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('[OpenRouter] API response:', JSON.stringify(data));
     let content = data.choices?.[0]?.message?.content ?? data.content ?? '';
-    console.log('[OpenRouter] Extracted content:', content);
 
     // Strip markdown code fences if present
     const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
     if (jsonMatch) {
       content = jsonMatch[1];
-      console.log('[OpenRouter] Stripped markdown, content:', content);
     }
 
     try {
       const result = JSON.parse(content) as CreateQuestionDto;
-      console.log('[OpenRouter] Parsed result:', JSON.stringify(result));
       // Validate that we have all required fields
       if (!result.questionText || !result.answerA || !result.answerB || !result.answerC || !result.answerD) {
         throw new BadRequestException('OpenRouter response missing required fields (questionText, answerA-D)');
       }
       return result;
     } catch (parseError) {
-      console.log('[OpenRouter] JSON parse error:', parseError);
       throw new BadRequestException(`Invalid JSON returned from OpenRouter: ${content?.substring(0, 100)}...`);
     }
   }

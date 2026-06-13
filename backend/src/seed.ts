@@ -8,9 +8,12 @@ async function bootstrap() {
   const usersService = app.get(UsersService);
   const prisma = app.get(PrismaService);
 
+  // Use environment variable for admin password, fallback to random for security
+  const adminPassword = process.env['ADMIN_PASSWORD'] ?? Math.random().toString(36).slice(2, 12);
+
   try {
-    await usersService.create('admin', 'admin1234', 'ADMIN');
-    console.log('✅ Admin created: username=admin  password=admin1234');
+    await usersService.create('admin', adminPassword, 'ADMIN');
+    console.log('✅ Admin user created (password from ADMIN_PASSWORD env var or randomly generated)');
   } catch {
     console.log('ℹ️  Admin already exists — skipping seed');
   }

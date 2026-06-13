@@ -7,7 +7,7 @@ interface Settings {
   theme: string;
   refreshInterval: number;
   openrouterEndpoint: string;
-  openrouterApiKey: string;
+  openrouterApiKeySet: boolean;
   openrouterPrompt: string;
   openrouterModel: string;
 }
@@ -110,7 +110,7 @@ export function AdminAppPage() {
 
   const isLoading = settingsLoading;
   const openrouterEndpoint = settings?.openrouterEndpoint ?? '';
-  const openrouterApiKey = settings?.openrouterApiKey ?? '';
+  const openrouterApiKeySet = settings?.openrouterApiKeySet ?? false;
   const openrouterModel = settings?.openrouterModel ?? DEFAULT_MODELS[0];
 
   if (isLoading) return <div className="loading">Loading settings...</div>;
@@ -172,15 +172,15 @@ export function AdminAppPage() {
             />
           </div>
           <div className="form-group">
-            <label>OpenRouter API Key</label>
+            <label>OpenRouter API Key {openrouterApiKeySet && <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>(set)</span>}</label>
             <input
               type="password"
-              defaultValue={openrouterApiKey}
               onChange={(e) => openrouterApiKeyMutation.mutate(e.target.value)}
               disabled={openrouterApiKeyMutation.isPending}
-              placeholder="sk-..."
+              placeholder={openrouterApiKeySet ? 'Enter new key to update' : 'sk-...'}
               style={{ width: '100%', padding: '0.5rem', fontSize: '0.875rem' }}
             />
+            <small className="muted">Leave empty to keep existing key.</small>
           </div>
           <div className="form-group">
             <label>OpenRouter Model</label>

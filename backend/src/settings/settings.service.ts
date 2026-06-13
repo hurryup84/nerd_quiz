@@ -43,9 +43,9 @@ export class SettingsService implements OnModuleInit {
     theme: string;
     refreshInterval: number;
     openrouterEndpoint: string;
-    openrouterApiKey: string;
     openrouterModel: string;
     openrouterPrompt: string;
+    openrouterApiKeySet: boolean;
   }> {
     const rows = await this.prisma.settings.findMany();
     const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
@@ -56,7 +56,7 @@ export class SettingsService implements OnModuleInit {
       ),
       openrouterEndpoint:
         map['openrouterEndpoint'] ?? DEFAULTS['openrouterEndpoint'],
-      openrouterApiKey: map['openrouterApiKey'] ?? DEFAULTS['openrouterApiKey'],
+      openrouterApiKeySet: (map['openrouterApiKey'] ?? '') !== '',
       openrouterModel: map['openrouterModel'] ?? DEFAULTS['openrouterModel'],
       openrouterPrompt: map['openrouterPrompt'] ?? DEFAULTS['openrouterPrompt'],
     };

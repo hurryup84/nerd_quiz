@@ -6,6 +6,10 @@ import { Request } from 'express';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
+    const jwtSecret = process.env['JWT_SECRET'];
+    if (!jwtSecret && process.env['NODE_ENV'] === 'production') {
+      throw new Error('JWT_SECRET must be set in production environment');
+    }
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => {
@@ -19,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: process.env['JWT_SECRET'] ?? 'change-me-in-production',
+      secretOrKey: jwtSecret ?? 'development-secret-do-not-use-in-production',
     });
   }
 
