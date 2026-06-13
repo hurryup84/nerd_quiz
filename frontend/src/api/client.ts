@@ -73,6 +73,9 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  categories: {
+    getAll: () => request<{ categories: { id: number; name: string }[] }>('/questions/meta').then((m) => m.categories),
+  },
   teams: {
     create: (data: { name: string; description?: string }) =>
       request('/teams', { method: 'POST', body: JSON.stringify(data) }),

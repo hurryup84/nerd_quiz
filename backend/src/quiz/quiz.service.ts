@@ -380,10 +380,21 @@ export class QuizService {
   private async buildRoundFilter(
     user: AuthUser,
     teamFilter?: string,
+    categoryFilter?: string,
   ): Promise<Prisma.QuizRoundWhereInput> {
     const base: Prisma.QuizRoundWhereInput = {
       status: { in: ['FINISHED', 'CANCELLED'] },
     };
+
+    // Add category filter
+    if (categoryFilter && categoryFilter !== 'all') {
+      const categoryId = Number(categoryFilter);
+      if (!isNaN(categoryId)) {
+        base.questions = {
+          some: { question: { categoryId } },
+        };
+      }
+    }
 
     if (!teamFilter || teamFilter === 'all') {
       if (this.isAdmin(user)) {
@@ -411,9 +422,10 @@ export class QuizService {
     user: AuthUser,
     page: number,
     teamFilter?: string,
+    categoryFilter?: string,
     pageSize = 25,
   ) {
-    const where = await this.buildRoundFilter(user, teamFilter);
+    const where = await this.buildRoundFilter(user, teamFilter, categoryFilter);
     const skip = (page - 1) * pageSize;
     const [rounds, total] = await Promise.all([
       this.prisma.quizRound.findMany({

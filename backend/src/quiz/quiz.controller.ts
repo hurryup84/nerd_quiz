@@ -40,8 +40,9 @@ export class QuizController {
     @Request() req: { user: { id: number; role: string } },
     @Query('page') page = '1',
     @Query('teamId') teamId?: string,
+    @Query('categoryId') categoryId?: string,
   ) {
-    return this.quizService.getHistory(req.user, Number(page), teamId);
+    return this.quizService.getHistory(req.user, Number(page), teamId, categoryId);
   }
 
   @Get('insights')

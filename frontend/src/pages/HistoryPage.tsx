@@ -7,6 +7,11 @@ import {
   withTeamFilter,
   type TeamFilterValue,
 } from '../components/TeamFilterSelect';
+import {
+  CategoryFilterSelect,
+  withCategoryFilter,
+  type CategoryFilterValue,
+} from '../components/CategoryFilterSelect';
 
 interface HistoryRound {
   id: number;
@@ -28,12 +33,13 @@ interface HistoryResponse {
 export function HistoryPage() {
   const [page, setPage] = useState(1);
   const [teamFilter, setTeamFilter] = useState<TeamFilterValue>('all');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>('all');
 
   const { data, isLoading } = useQuery<HistoryResponse>({
-    queryKey: ['history', page, teamFilter],
+    queryKey: ['history', page, teamFilter, categoryFilter],
     queryFn: () =>
       api.get<HistoryResponse>(
-        withTeamFilter(`/quiz/history?page=${page}`, teamFilter),
+        withCategoryFilter(withTeamFilter(`/quiz/history?page=${page}`, teamFilter), categoryFilter),
       ),
     staleTime: 1000 * 60 * 5,
   });
@@ -50,6 +56,13 @@ export function HistoryPage() {
           value={teamFilter}
           onChange={(v) => {
             setTeamFilter(v);
+            setPage(1);
+          }}
+        />
+        <CategoryFilterSelect
+          value={categoryFilter}
+          onChange={(v) => {
+            setCategoryFilter(v);
             setPage(1);
           }}
         />
