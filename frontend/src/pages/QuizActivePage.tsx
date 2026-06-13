@@ -75,12 +75,50 @@ export function QuizActivePage() {
       const s = query?.state?.data?.status;
       return s === 'ACTIVE' || s === undefined ? pollMs : false;
     },
-    staleTime: 1000,
+    refetchIntervalInBackground: true,
+    staleTime: 500, // Reduce stale time for faster updates
   });
 
+  // Hooks must be called unconditionally, so define these before any early return
   const submitMutation = useMutation({
     mutationFn: (data: { questionId: number; answer: string }) =>
       api.post(`/quiz/${id}/answers`, { questionId: data.questionId, selectedAnswer: data.answer }),
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ['quiz', id] });
+      const previousRound = queryClient.getQueryData<QuizRound>(['quiz', id]);
+      // We'll compute currentRQ inside the onMutate callback using the cached round data
+      const cachedRound = queryClient.getQueryData<QuizRound>(['quiz', id]);
+      if (cachedRound && user) {
+        const currentRQ = cachedRound.questions[currentIdx];
+        if (currentRQ) {
+          queryClient.setQueryData<QuizRound>(['quiz', id], (old) => {
+            if (!old) return old;
+            const existingAnswerIndex = old.answers.findIndex(
+              (a) => a.roundQuestionId === currentRQ.id && a.user.id === user.id,
+            );
+            const optimisticAnswer: Answer = {
+              id: existingAnswerIndex >= 0 ? old.answers[existingAnswerIndex].id : Date.now(),
+              selectedAnswer: data.answer,
+              user: { id: user.id, username: user.username },
+              roundQuestionId: currentRQ.id,
+            };
+            const newAnswers = [...old.answers];
+            if (existingAnswerIndex >= 0) {
+              newAnswers[existingAnswerIndex] = optimisticAnswer;
+            } else {
+              newAnswers.push(optimisticAnswer);
+            }
+            return { ...old, answers: newAnswers };
+          });
+        }
+      }
+      return { previousRound };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previousRound) {
+        queryClient.setQueryData(['quiz', id], context.previousRound);
+      }
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['quiz', id] });
     },
@@ -103,16 +141,16 @@ export function QuizActivePage() {
 
   if (isLoading || !round) return <div className="loading">Loading…</div>;
 
-  const isFinalized = round.finalizations?.some((f) => f.user.id === user?.id);
+  const currentRQ = round.questions[currentIdx];
   const myAnswers = round.answers.filter((a) => a.user.id === user?.id);
+  const currentAnswer = myAnswers.find((a) => a.roundQuestionId === currentRQ?.id);
+
+  const isFinalized = round.finalizations?.some((f) => f.user.id === user?.id);
   const isFinished = round.status === 'FINISHED';
   const isCancelled = round.status === 'CANCELLED';
   const canCancel =
     round.status === 'ACTIVE' &&
     (round.createdBy?.id === user?.id || user?.role === 'ADMIN');
-
-  const currentRQ = round.questions[currentIdx];
-  const currentAnswer = myAnswers.find((a) => a.roundQuestionId === currentRQ?.id);
 
   const renderQuizContent = () => {
     if (isFinished) {
