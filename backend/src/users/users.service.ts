@@ -7,11 +7,15 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async create(username: string, password: string, role = 'USER') {
-    const existing = await this.prisma.user.findUnique({ where: { username } });
-    if (existing) throw new ConflictException('Username already taken');
+    // Normalize and check for existing username
+    const normalizedUsername = username.trim();
+    const existing = await this.prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM User WHERE LOWER(username) = ${normalizedUsername.toLowerCase()}
+    `;
+    if (existing.length > 0) throw new ConflictException('Username already taken');
     const passwordHash = await argon2.hash(password);
     return this.prisma.user.create({
-      data: { username, passwordHash, role },
+      data: { username: normalizedUsername, passwordHash, role },
     });
   }
 
