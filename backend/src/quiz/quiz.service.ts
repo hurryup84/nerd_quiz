@@ -16,7 +16,7 @@ const roundDetailInclude = {
   questions: {
     include: {
       question: {
-        include: { category: true, difficulty: true },
+        include: { category: true, difficulty: true, creator: true },
       },
     },
     orderBy: { order: 'asc' as const },
